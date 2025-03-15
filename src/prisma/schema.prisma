@@ -1,0 +1,25 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Usuario {
+  id       Int    @id @default(autoincrement())
+  nombre   String
+  email    String @unique
+  password String
+  // Puedes agregar más campos (estado, fecha de creación, etc.)
+  roles    Rol[]  @relation("UsuarioRoles")
+}
+
+model Rol {
+  id       Int      @id @default(autoincrement())
+  nombre   String   @unique
+  usuarios Usuario[] @relation("UsuarioRoles")
+}
+
