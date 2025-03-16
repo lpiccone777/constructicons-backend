@@ -1,3 +1,4 @@
+// src/auth/auth.service.ts (actualización)
 import { 
   Injectable,
   ConflictException,
@@ -21,7 +22,17 @@ export class AuthService {
   // Retorna el usuario sin el campo password
   async validateUser(email: string, password: string): Promise<Omit<Usuario, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
-    if (user && await bcrypt.compare(password, user.password)) {
+    if (!user) return null;
+    
+    // Verificar si el usuario está activo
+    if (user.estado === 'inactivo') {
+      return null;
+    }
+    
+    if (await bcrypt.compare(password, user.password)) {
+      // Actualizar última actividad del usuario
+      await this.usersService.actualizarUltimaActividad(user.id);
+      
       const { password, ...result } = user;
       return result as Omit<Usuario, 'password'>;
     }
@@ -33,13 +44,36 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
+    
+    // Preparar la información de roles y permisos para el token
+    const roles = user.roles.map(r => r.nombre);
+    const permisos = new Set<string>();
+    
+    // Extraer todos los permisos únicos de todos los roles
+    user.roles.forEach(rol => {
+      rol.permisos.forEach(permiso => {
+        permisos.add(`${permiso.modulo}.${permiso.accion}`);
+      });
+    });
+    
     const payload = { 
       sub: user.id, 
       email: user.email, 
-      roles: user.roles.map((r) => r.nombre) 
+      roles,
+      permisos: Array.from(permisos),
+      esSuperUsuario: user.esSuperUsuario
     };
+    
     return {
       access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        roles,
+        permisos: Array.from(permisos),
+        esSuperUsuario: user.esSuperUsuario
+      }
     };
   }
 
@@ -49,12 +83,18 @@ export class AuthService {
       throw new ConflictException('El usuario ya existe');
     }
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    
+    // Determinar si es el super usuario
+    const esSuperUsuario = registerDto.email === 'asesorpicconel@gmail.com';
+    
     const newUser = await this.usersService.create({
       nombre: registerDto.nombre,
       email: registerDto.email,
       password: hashedPassword,
       roles: registerDto.roles || ['user'],
+      esSuperUsuario
     });
+    
     const { password, ...result } = newUser;
     return result;
   }
