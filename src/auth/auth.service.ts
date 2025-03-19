@@ -2,7 +2,8 @@
 import { 
   Injectable,
   ConflictException,
-  UnauthorizedException
+  UnauthorizedException,
+  NotFoundException
 } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
@@ -81,7 +82,6 @@ export class AuthService {
     if (existingUser) {
       throw new ConflictException('El usuario ya existe');
     }
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     
     // Determinar si es el super usuario
     const esSuperUsuario = registerDto.email === 'asesorpicconel@gmail.com';
@@ -89,12 +89,45 @@ export class AuthService {
     const newUser = await this.usersService.create({
       nombre: registerDto.nombre,
       email: registerDto.email,
-      password: hashedPassword,
+      password: registerDto.password,
       roles: registerDto.roles || ['user'],
       esSuperUsuario
     });
     
     const { password, ...result } = newUser;
     return result;
+  }
+
+  async getProfile(userId: number) {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Necesitamos hacer una aserción de tipo para TypeScript
+    const userWithRoles = user as any;
+    
+    // Preparar la información de roles y permisos
+    const roles = userWithRoles.roles?.map((r: any) => r.nombre) || [];
+    const permisos = new Set<string>();
+    
+    // Extraer todos los permisos únicos de todos los roles
+    if (userWithRoles.roles) {
+      userWithRoles.roles.forEach((rol: any) => {
+        if (rol.permisos) {
+          rol.permisos.forEach((permiso: any) => {
+            permisos.add(`${permiso.modulo}.${permiso.accion}`);
+          });
+        }
+      });
+    }
+
+    const { password, ...userInfo } = user;
+    
+    return {
+      ...userInfo,
+      roles,
+      permisos: Array.from(permisos)
+    };
   }
 }

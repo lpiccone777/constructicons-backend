@@ -9,13 +9,15 @@ import {
   Delete, 
   UseGuards,
   Request,
-  ParseIntPipe,
-  ForbiddenException
+  ParseIntPipe
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { UsersService, CreateUserDto, UpdateUserDto } from './users.service';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { PermisosService } from '../permisos/permisos.service';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -23,91 +25,50 @@ import { PermisosService } from '../permisos/permisos.service';
 @Controller('users')
 export class UsersController {
   constructor(
-    private readonly usersService: UsersService,
-    private readonly permisosService: PermisosService
+    private readonly usersService: UsersService
   ) {}
 
   @Get()
+  @RequirePermissions('usuarios.leer')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Obtener todos los usuarios' })
-  async findAll(@Request() req: any) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'usuarios',
-      'leer'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para ver usuarios');
-    }
-    
+  async findAll() {
     return this.usersService.findAll();
   }
 
   @Get(':id')
+  @RequirePermissions('usuarios.leer')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Obtener un usuario por su ID' })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'usuarios',
-      'leer'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para ver usuarios');
-    }
-    
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findById(id);
   }
 
   @Post()
+  @RequirePermissions('usuarios.crear')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Crear un nuevo usuario' })
   async create(@Body() createUserDto: CreateUserDto, @Request() req: any) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'usuarios',
-      'crear'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para crear usuarios');
-    }
-    
     return this.usersService.create(createUserDto, req.user.id);
   }
 
   @Put(':id')
+  @RequirePermissions('usuarios.actualizar')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Actualizar un usuario' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
     @Request() req: any
   ) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'usuarios',
-      'actualizar'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para actualizar usuarios');
-    }
-    
     return this.usersService.update(id, updateUserDto, req.user.id);
   }
 
   @Delete(':id')
+  @RequirePermissions('usuarios.eliminar')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Eliminar un usuario' })
   async delete(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'usuarios',
-      'eliminar'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para eliminar usuarios');
-    }
-    
     return this.usersService.delete(id, req.user.id);
   }
 }

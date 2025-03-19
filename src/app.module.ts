@@ -7,10 +7,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
 import { RolesModule } from './roles/roles.module';
 import { PermisosModule } from './permisos/permisos.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CommonModule,
     PrismaModule,
     AuditoriaModule,
     PermisosModule,
