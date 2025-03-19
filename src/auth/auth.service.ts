@@ -1,4 +1,4 @@
-// src/auth/auth.service.ts (actualización)
+// src/auth/auth.service.ts
 import { 
   Injectable,
   ConflictException,
@@ -19,8 +19,7 @@ export class AuthService {
     private usersService: UsersService,
   ) {}
 
-  // Retorna el usuario sin el campo password
-  async validateUser(email: string, password: string): Promise<Omit<Usuario, 'password'> | null> {
+  async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (!user) return null;
     
@@ -34,7 +33,7 @@ export class AuthService {
       await this.usersService.actualizarUltimaActividad(user.id);
       
       const { password, ...result } = user;
-      return result as Omit<Usuario, 'password'>;
+      return result;
     }
     return null;
   }
@@ -46,12 +45,12 @@ export class AuthService {
     }
     
     // Preparar la información de roles y permisos para el token
-    const roles = user.roles.map(r => r.nombre);
+    const roles = user.roles.map((r: any) => r.nombre);
     const permisos = new Set<string>();
     
     // Extraer todos los permisos únicos de todos los roles
-    user.roles.forEach(rol => {
-      rol.permisos.forEach(permiso => {
+    user.roles.forEach((rol: any) => {
+      rol.permisos.forEach((permiso: any) => {
         permisos.add(`${permiso.modulo}.${permiso.accion}`);
       });
     });

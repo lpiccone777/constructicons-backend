@@ -125,6 +125,9 @@ export class PermisosService {
       },
     });
 
+    // Verificar si el usuario existe
+    if (!usuario) return false;
+
     // Super usuario siempre tiene acceso
     if (usuario.esSuperUsuario) return true;
 

@@ -100,7 +100,7 @@ export class UsersService {
     if (data.estado) updateData.estado = data.estado;
     
     // Actualizar roles si se proporcionan
-    let rolesToConnect = [];
+    let rolesToConnect: { id: number }[] = [];
     if (data.roles && data.roles.length > 0) {
       rolesToConnect = await Promise.all(
         data.roles.map(async (roleName) => {

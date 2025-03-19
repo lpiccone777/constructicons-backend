@@ -19,7 +19,7 @@ export class AuditoriaService {
         accion,
         entidad,
         entidadId,
-        detalles: detalles ? JSON.stringify(detalles) : null,
+        detalles: detalles ? detalles : undefined,
       },
     });
   }

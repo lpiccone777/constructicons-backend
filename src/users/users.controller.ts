@@ -29,7 +29,7 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: 'Obtener todos los usuarios' })
-  async findAll(@Request() req) {
+  async findAll(@Request() req: any) {
     const tienePermiso = await this.permisosService.verificarPermiso(
       req.user.id,
       'usuarios',
@@ -45,7 +45,7 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un usuario por su ID' })
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
+  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     const tienePermiso = await this.permisosService.verificarPermiso(
       req.user.id,
       'usuarios',
@@ -61,7 +61,7 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo usuario' })
-  async create(@Body() createUserDto: CreateUserDto, @Request() req) {
+  async create(@Body() createUserDto: CreateUserDto, @Request() req: any) {
     const tienePermiso = await this.permisosService.verificarPermiso(
       req.user.id,
       'usuarios',
@@ -80,7 +80,7 @@ export class UsersController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
-    @Request() req
+    @Request() req: any
   ) {
     const tienePermiso = await this.permisosService.verificarPermiso(
       req.user.id,
@@ -97,7 +97,7 @@ export class UsersController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar un usuario' })
-  async delete(@Param('id', ParseIntPipe) id: number, @Request() req) {
+  async delete(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     const tienePermiso = await this.permisosService.verificarPermiso(
       req.user.id,
       'usuarios',

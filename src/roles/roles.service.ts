@@ -37,7 +37,7 @@ export class RolesService {
 
   async create(data: CreateRolDto, usuarioCreadorId: number) {
     // Preparar permisos si se proporcionan
-    let permisosToConnect = [];
+    let permisosToConnect: { id: number }[] = [];
     if (data.permisos && data.permisos.length > 0) {
       permisosToConnect = await Promise.all(
         data.permisos.map(async (permisoNombre) => {
@@ -91,7 +91,7 @@ export class RolesService {
     if (data.descripcion) updateData.descripcion = data.descripcion;
     
     // Preparar permisos si se proporcionan
-    let permisosToConnect = [];
+    let permisosToConnect: { id: number }[] = [];
     if (data.permisos && data.permisos.length > 0) {
       permisosToConnect = await Promise.all(
         data.permisos.map(async (permisoNombre) => {
