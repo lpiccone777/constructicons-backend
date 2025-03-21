@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
+import { PermisosModule } from '../permisos/permisos.module';
 import { ProyectosController } from './proyectos.controller';
 import { ProyectosService } from './proyectos.service';
 import { EtapasController } from './etapas/etapas.controller';
@@ -17,7 +18,8 @@ import { NotasService } from './notas/notas.service';
 @Module({
   imports: [
     PrismaModule,
-    AuditoriaModule
+    AuditoriaModule,
+    PermisosModule  // Añadimos el módulo de permisos
   ],
   controllers: [
     ProyectosController,

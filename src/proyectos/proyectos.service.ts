@@ -13,10 +13,10 @@ export class ProyectosService {
   ) {}
 
   async findAll(query: { estado?: string } = {}) {
-    const where = {};
+    const where: Record<string, any> = {};
     
     if (query.estado) {
-      where['estado'] = query.estado;
+      where.estado = query.estado;
     }
     
     return this.prisma.proyecto.findMany({

@@ -1,27 +1,26 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNumber,
   IsOptional,
   IsDateString,
   IsIn,
-  IsNotEmpty,
   MaxLength,
   Min
 } from 'class-validator';
 
-export class CreateTareaDto {
-  @ApiProperty({ 
-    example: 'Excavación para cimientos', 
+export class UpdateTareaDto {
+  @ApiPropertyOptional({ 
+    example: 'Excavación y preparación para cimientos', 
     description: 'Nombre de la tarea' 
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(100)
-  nombre!: string;
+  nombre?: string;
 
   @ApiPropertyOptional({ 
-    example: 'Excavación de 3 metros de profundidad para la base de los cimientos', 
+    example: 'Excavación de 3.5 metros de profundidad y compactación del terreno', 
     description: 'Descripción detallada de la tarea' 
   })
   @IsString()
@@ -29,25 +28,17 @@ export class CreateTareaDto {
   @MaxLength(500)
   descripcion?: string;
 
-  @ApiProperty({ 
-    example: 1, 
-    description: 'ID de la etapa a la que pertenece esta tarea' 
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  etapaId!: number;
-
-  @ApiProperty({ 
-    example: 1, 
+  @ApiPropertyOptional({ 
+    example: 2, 
     description: 'Orden de la tarea dentro de la etapa' 
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   @Min(1)
-  orden!: number;
+  orden?: number;
 
   @ApiPropertyOptional({ 
-    example: '2025-04-15', 
+    example: '2025-04-18', 
     description: 'Fecha planeada de inicio de la tarea' 
   })
   @IsDateString()
@@ -55,7 +46,7 @@ export class CreateTareaDto {
   fechaInicio?: string;
 
   @ApiPropertyOptional({ 
-    example: '2025-04-25', 
+    example: '2025-04-28', 
     description: 'Fecha estimada de finalización de la tarea' 
   })
   @IsDateString()
@@ -63,7 +54,15 @@ export class CreateTareaDto {
   fechaFinEstimada?: string;
 
   @ApiPropertyOptional({ 
-    example: 'pendiente', 
+    example: '2025-04-27', 
+    description: 'Fecha real de finalización de la tarea' 
+  })
+  @IsDateString()
+  @IsOptional()
+  fechaFinReal?: string;
+
+  @ApiPropertyOptional({ 
+    example: 'en_progreso', 
     description: 'Estado actual de la tarea',
     enum: ['pendiente', 'en_progreso', 'completada'] 
   })
@@ -72,7 +71,7 @@ export class CreateTareaDto {
   estado?: string;
 
   @ApiPropertyOptional({ 
-    example: 'alta', 
+    example: 'media', 
     description: 'Nivel de prioridad de la tarea',
     enum: ['baja', 'media', 'alta'] 
   })

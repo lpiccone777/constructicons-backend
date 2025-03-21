@@ -12,10 +12,10 @@ export class TareasService {
   ) {}
 
   async findAll(etapaId?: number) {
-    const where = {};
+    const where: Record<string, any> = {};
     
     if (etapaId) {
-      where['etapaId'] = etapaId;
+      where.etapaId = etapaId;
     }
     
     return this.prisma.tareaProyecto.findMany({
