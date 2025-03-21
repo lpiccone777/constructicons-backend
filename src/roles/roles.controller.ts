@@ -9,13 +9,15 @@ import {
   Delete, 
   UseGuards,
   Request,
-  ParseIntPipe,
-  ForbiddenException
+  ParseIntPipe
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesService, CreateRolDto, UpdateRolDto } from './roles.service';
+import { RolesService } from './roles.service';
+import { CreateRolDto } from './dto/create-rol.dto';
+import { UpdateRolDto } from './dto/update-rol.dto';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { PermisosService } from '../permisos/permisos.service';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('roles')
 @ApiBearerAuth()
@@ -23,75 +25,42 @@ import { PermisosService } from '../permisos/permisos.service';
 @Controller('roles')
 export class RolesController {
   constructor(
-    private readonly rolesService: RolesService,
-    private readonly permisosService: PermisosService
+    private readonly rolesService: RolesService
   ) {}
 
   @Get()
+  @RequirePermissions('roles.leer')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Obtener todos los roles' })
-  async findAll(@Request() req: any) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'roles',
-      'leer'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para ver roles');
-    }
-    
+  async findAll() {
     return this.rolesService.findAll();
   }
 
   @Post()
+  @RequirePermissions('roles.crear')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Crear un nuevo rol' })
   async create(@Body() createRolDto: CreateRolDto, @Request() req: any) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'roles',
-      'crear'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para crear roles');
-    }
-    
     return this.rolesService.create(createRolDto, req.user.id);
   }
 
   @Put(':id')
+  @RequirePermissions('roles.actualizar')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Actualizar un rol' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateRolDto: UpdateRolDto,
     @Request() req: any
   ) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'roles',
-      'actualizar'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para actualizar roles');
-    }
-    
     return this.rolesService.update(id, updateRolDto, req.user.id);
   }
 
   @Delete(':id')
+  @RequirePermissions('roles.eliminar')
+  @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Eliminar un rol' })
   async delete(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-    const tienePermiso = await this.permisosService.verificarPermiso(
-      req.user.id,
-      'roles',
-      'eliminar'
-    );
-    
-    if (!tienePermiso) {
-      throw new ForbiddenException('No tiene permisos para eliminar roles');
-    }
-    
     return this.rolesService.delete(id, req.user.id);
   }
 }

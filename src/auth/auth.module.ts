@@ -6,6 +6,8 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { PermissionsGuard } from './guards/permissions.guard';
+import { PermisosModule } from '../permisos/permisos.module';
 
 @Module({
   imports: [
@@ -20,9 +22,10 @@ import { UsersModule } from '../users/users.module';
     }),
     ConfigModule,
     forwardRef(() => UsersModule), // Evita dependencias circulares
+    forwardRef(() => PermisosModule), // Evita dependencias circulares
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, PermissionsGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, JwtStrategy, PermissionsGuard],
 })
 export class AuthModule {}

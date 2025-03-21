@@ -2,18 +2,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
-
-export interface CreateRolDto {
-  nombre: string;
-  descripcion?: string;
-  permisos?: string[]; // Nombres de los permisos
-}
-
-export interface UpdateRolDto {
-  nombre?: string;
-  descripcion?: string;
-  permisos?: string[];
-}
+import { CreateRolDto } from './dto/create-rol.dto';
+import { UpdateRolDto } from './dto/update-rol.dto';
 
 @Injectable()
 export class RolesService {

@@ -1,25 +1,11 @@
 // src/users/users.service.ts
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, Usuario } from '@prisma/client';
+import { Usuario } from '@prisma/client';
 import { AuditoriaService } from '../auditoria/auditoria.service';
-
-export interface CreateUserDto {
-  nombre: string;
-  email: string;
-  password: string;
-  roles: string[];
-  estado?: string;
-  esSuperUsuario?: boolean;
-}
-
-export interface UpdateUserDto {
-  nombre?: string;
-  email?: string;
-  password?: string;
-  roles?: string[];
-  estado?: string;
-}
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -39,9 +25,12 @@ export class UsersService {
     // Verificar si el email es el superusuario designado
     const esSuperUsuario = data.email === 'asesorpicconel@gmail.com' || data.esSuperUsuario;
     
+    // Hash de contraseña
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    
     // Preparar roles
     const rolesData = await Promise.all(
-      data.roles.map(async (roleName) => {
+      (data.roles || ['user']).map(async (roleName) => {
         let role = await this.prisma.rol.findFirst({
           where: { nombre: roleName },
         });
@@ -59,7 +48,7 @@ export class UsersService {
       data: {
         nombre: data.nombre,
         email: data.email,
-        password: data.password,
+        password: hashedPassword,
         estado: data.estado || 'activo',
         esSuperUsuario,
         roles: { connect: rolesData },
@@ -96,7 +85,7 @@ export class UsersService {
     const updateData: any = {};
     if (data.nombre) updateData.nombre = data.nombre;
     if (data.email) updateData.email = data.email;
-    if (data.password) updateData.password = data.password;
+    if (data.password) updateData.password = await bcrypt.hash(data.password, 10);
     if (data.estado) updateData.estado = data.estado;
     
     // Actualizar roles si se proporcionan
@@ -187,7 +176,7 @@ export class UsersService {
     });
   }
 
-  async findById(id: number): Promise<Usuario | null> {
+  async findById(id: number): Promise<any> {
     return this.prisma.usuario.findUnique({
       where: { id },
       include: { roles: { include: { permisos: true } } },
