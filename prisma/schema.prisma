@@ -9,16 +9,22 @@ generator client {
 }
 
 model Usuario {
-  id             Int         @id @default(autoincrement())
-  nombre         String
-  email          String      @unique
-  password       String
-  estado         String      @default("activo") // activo o inactivo
-  fechaCreacion  DateTime    @default(now())
-  ultimaActividad DateTime?
-  roles          Rol[]       @relation("UsuarioRoles")
-  acciones       Auditoria[]
-  esSuperUsuario Boolean     @default(false)
+  id                Int               @id @default(autoincrement())
+  nombre            String
+  email             String            @unique
+  password          String
+  estado            String            @default("activo") // activo o inactivo
+  fechaCreacion     DateTime          @default(now())
+  ultimaActividad   DateTime?
+  roles             Rol[]             @relation("UsuarioRoles")
+  acciones          Auditoria[]
+  esSuperUsuario    Boolean           @default(false)
+  
+  // Nuevas relaciones para proyectos
+  proyectosAsignados AsignacionProyecto[]
+  tareasAsignadas    AsignacionTarea[]
+  documentosCargados DocumentoProyecto[]
+  notasProyecto      NotaProyecto[]
 }
 
 model Rol {
@@ -47,4 +53,117 @@ model Auditoria {
   entidadId    String   // id de la entidad afectada
   detalles     Json?    // detalles del cambio en formato JSON
   fechaHora    DateTime @default(now())
+}
+
+// Modelo para proyectos de construcción
+model Proyecto {
+  id                Int               @id @default(autoincrement())
+  codigo            String            @unique
+  nombre            String
+  descripcion       String?
+  ubicacion         String
+  fechaInicio       DateTime?
+  fechaFinEstimada  DateTime?
+  fechaFinReal      DateTime?
+  presupuestoTotal  Decimal           @db.Decimal(12, 2)
+  estado            String            @default("planificacion") // planificacion, ejecucion, pausado, finalizado, cancelado
+  prioridad         String            @default("media")         // baja, media, alta
+  fechaCreacion     DateTime          @default(now())
+  fechaActualizacion DateTime         @updatedAt
+  etapas            EtapaProyecto[]
+  asignaciones      AsignacionProyecto[]
+  documentos        DocumentoProyecto[]
+  notas             NotaProyecto[]
+}
+
+// Modelo para etapas de proyectos
+model EtapaProyecto {
+  id                Int               @id @default(autoincrement())
+  nombre            String
+  descripcion       String?
+  proyectoId        Int
+  proyecto          Proyecto          @relation(fields: [proyectoId], references: [id])
+  orden             Int
+  fechaInicio       DateTime?
+  fechaFinEstimada  DateTime?
+  fechaFinReal      DateTime?
+  presupuesto       Decimal           @db.Decimal(12, 2)
+  estado            String            @default("pendiente") // pendiente, en_progreso, completada
+  avance            Int               @default(0) // Porcentaje de avance (0-100)
+  fechaCreacion     DateTime          @default(now())
+  fechaActualizacion DateTime         @updatedAt
+  tareas            TareaProyecto[]
+}
+
+// Modelo para tareas de etapas
+model TareaProyecto {
+  id                Int               @id @default(autoincrement())
+  nombre            String
+  descripcion       String?
+  etapaId           Int
+  etapa             EtapaProyecto     @relation(fields: [etapaId], references: [id])
+  orden             Int
+  fechaInicio       DateTime?
+  fechaFinEstimada  DateTime?
+  fechaFinReal      DateTime?
+  estado            String            @default("pendiente") // pendiente, en_progreso, completada
+  prioridad         String            @default("media")     // baja, media, alta
+  asignado          AsignacionTarea[]
+  fechaCreacion     DateTime          @default(now())
+  fechaActualizacion DateTime         @updatedAt
+}
+
+// Modelo para asignación de empleados a proyectos
+model AsignacionProyecto {
+  id                Int               @id @default(autoincrement())
+  proyectoId        Int
+  proyecto          Proyecto          @relation(fields: [proyectoId], references: [id])
+  usuarioId         Int
+  usuario           Usuario           @relation(fields: [usuarioId], references: [id])
+  rol               String            // director, arquitecto, ingeniero, capataz, obrero, etc.
+  fechaAsignacion   DateTime          @default(now())
+  fechaDesasignacion DateTime?
+  activo            Boolean           @default(true)
+
+  @@unique([proyectoId, usuarioId, rol])
+}
+
+// Modelo para asignación de empleados a tareas específicas
+model AsignacionTarea {
+  id                Int               @id @default(autoincrement())
+  tareaId           Int
+  tarea             TareaProyecto     @relation(fields: [tareaId], references: [id])
+  usuarioId         Int
+  usuario           Usuario           @relation(fields: [usuarioId], references: [id])
+  fechaAsignacion   DateTime          @default(now())
+  fechaDesasignacion DateTime?
+  activo            Boolean           @default(true)
+
+  @@unique([tareaId, usuarioId])
+}
+
+// Modelo para documentos de proyecto
+model DocumentoProyecto {
+  id                Int               @id @default(autoincrement())
+  proyectoId        Int
+  proyecto          Proyecto          @relation(fields: [proyectoId], references: [id])
+  nombre            String
+  descripcion       String?
+  tipo              String            // plano, contrato, permiso, informe, etc.
+  urlArchivo        String
+  fechaCarga        DateTime          @default(now())
+  usuarioCargaId    Int
+  usuarioCarga      Usuario           @relation(fields: [usuarioCargaId], references: [id])
+}
+
+// Modelo para notas/comentarios de proyecto
+model NotaProyecto {
+  id                Int               @id @default(autoincrement())
+  proyectoId        Int
+  proyecto          Proyecto          @relation(fields: [proyectoId], references: [id])
+  usuarioId         Int
+  usuario           Usuario           @relation(fields: [usuarioId], references: [id])
+  contenido         String
+  fechaCreacion     DateTime          @default(now())
+  esPrivada         Boolean           @default(false)
 }

@@ -7,16 +7,20 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
 import { RolesModule } from './roles/roles.module';
 import { PermisosModule } from './permisos/permisos.module';
+import { CommonModule } from './;
+import { ProyectosModule } from './proyectos/proyectos.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CommonModule,
     PrismaModule,
     AuditoriaModule,
     PermisosModule,
     RolesModule,
     AuthModule,
     UsersModule,
+    ProyectosModule,
   ],
 })
 export class AppModule {}
