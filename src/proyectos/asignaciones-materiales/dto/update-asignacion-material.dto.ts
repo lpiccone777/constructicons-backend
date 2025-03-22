@@ -1,40 +1,22 @@
-// src/proyectos/asignaciones-materiales/dto/create-asignacion-material.dto.ts
+// src/proyectos/asignaciones-materiales/dto/update-asignacion-material.dto.ts
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsNumber,
-  IsNotEmpty,
-  IsString,
   IsOptional,
+  IsString,
   IsDecimal,
   IsIn,
   MaxLength
 } from 'class-validator';
 
-export class CreateAsignacionMaterialDto {
-  @ApiProperty({ 
-    example: 1, 
-    description: 'ID de la tarea a la que se asigna el material' 
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  tareaId!: number;
-
-  @ApiProperty({ 
-    example: 1, 
-    description: 'ID del material a asignar' 
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  materialId!: number;
-
-  @ApiProperty({ 
+export class UpdateAsignacionMaterialDto {
+  @ApiPropertyOptional({ 
     example: '12.75', 
     description: 'Cantidad del material requerida' 
   })
   @IsDecimal({ decimal_digits: '0,2' })
-  @IsNotEmpty()
-  cantidad!: string;
+  @IsOptional()
+  cantidad?: string;
 
   @ApiPropertyOptional({ 
     example: 'kg', 
@@ -46,7 +28,7 @@ export class CreateAsignacionMaterialDto {
   unidadMedida?: string;
 
   @ApiPropertyOptional({ 
-    example: 'pendiente', 
+    example: 'comprado', 
     description: 'Estado actual de la asignación del material',
     enum: ['pendiente', 'solicitado', 'comprado', 'entregado'] 
   })
@@ -56,7 +38,7 @@ export class CreateAsignacionMaterialDto {
   estado?: string;
 
   @ApiPropertyOptional({ 
-    example: 'Material para cimentación', 
+    example: 'Material ya disponible en almacén', 
     description: 'Observaciones sobre la asignación del material' 
   })
   @IsString()

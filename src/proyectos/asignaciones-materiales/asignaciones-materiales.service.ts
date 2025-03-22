@@ -7,6 +7,25 @@ import { CreateAsignacionMaterialDto } from './dto/create-asignacion-material.dt
 import { UpdateAsignacionMaterialDto } from './dto/update-asignacion-material.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 
+export interface ResumenMaterialItem {
+  id: number;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  unidadMedida: string;
+  cantidadTotal: number;
+  precioReferencia: Decimal;
+  costoEstimado: Decimal;
+  cantidadPorEstado: {
+    pendiente: number;
+    solicitado: number;
+    comprado: number;
+    entregado: number;
+  };
+}
+
+type EstadoAsignacion = 'pendiente' | 'solicitado' | 'comprado' | 'entregado';
+
 @Injectable()
 export class AsignacionesMaterialesService {
   constructor(
@@ -262,7 +281,7 @@ export class AsignacionesMaterialesService {
     );
   }
 
-  async getResumenMaterialesPorProyecto(proyectoId: number) {
+  async getResumenMaterialesPorProyecto(proyectoId: number): Promise<ResumenMaterialItem[]> {
     // Obtener todas las asignaciones de materiales para tareas del proyecto
     const asignaciones = await this.prisma.asignacionMaterial.findMany({
       where: {
@@ -283,11 +302,15 @@ export class AsignacionesMaterialesService {
     });
 
     // Agrupar y sumar cantidades por material
-    const resumenMateriales = asignaciones.reduce((acc, asignacion) => {
+    const resumenMateriales: ResumenMaterialItem[] = [];
+    const materialMap: Record<number, ResumenMaterialItem> = {};
+
+    for (const asignacion of asignaciones) {
       const materialId = asignacion.materialId;
+      const estado = asignacion.estado as EstadoAsignacion;
       
-      if (!acc[materialId]) {
-        acc[materialId] = {
+      if (!materialMap[materialId]) {
+        materialMap[materialId] = {
           id: asignacion.material.id,
           codigo: asignacion.material.codigo,
           nombre: asignacion.material.nombre,
@@ -303,22 +326,21 @@ export class AsignacionesMaterialesService {
             entregado: 0
           }
         };
+        resumenMateriales.push(materialMap[materialId]);
       }
       
       // Sumar cantidades (convertir a la misma unidad si es necesario)
-      acc[materialId].cantidadTotal += Number(asignacion.cantidad);
+      materialMap[materialId].cantidadTotal += Number(asignacion.cantidad);
       
-      // Sumar por estado
-      acc[materialId].cantidadPorEstado[asignacion.estado] += Number(asignacion.cantidad);
+      // Sumar por estado (now type-safe)
+      materialMap[materialId].cantidadPorEstado[estado] += Number(asignacion.cantidad);
       
       // Calcular costo estimado
-      acc[materialId].costoEstimado = acc[materialId].costoEstimado.plus(
+      materialMap[materialId].costoEstimado = materialMap[materialId].costoEstimado.plus(
         asignacion.cantidad.mul(asignacion.material.precioReferencia)
       );
-      
-      return acc;
-    }, {});
+    }
 
-    return Object.values(resumenMateriales);
+    return resumenMateriales;
   }
 }
