@@ -167,3 +167,56 @@ model NotaProyecto {
   fechaCreacion     DateTime          @default(now())
   esPrivada         Boolean           @default(false)
 }
+
+// Modelo para materiales
+model Material {
+  id                Int               @id @default(autoincrement())
+  codigo            String            @unique
+  nombre            String
+  descripcion       String?
+  categoria         String
+  unidadMedida      String
+  precioReferencia  Decimal           @db.Decimal(12, 2)
+  stockMinimo       Decimal?          @db.Decimal(12, 2)
+  fechaCreacion     DateTime          @default(now())
+  fechaActualizacion DateTime         @updatedAt
+}
+
+// Modelo para proveedores
+model Proveedor {
+  id                Int               @id @default(autoincrement())
+  codigo            String            @unique
+  nombre            String
+  nombreComercial   String?
+  tipoDocumento     String            // RFC, NIF, etc.
+  numeroDocumento   String
+  direccion         String?
+  ciudad            String?
+  codigoPostal      String?
+  pais              String?
+  telefono          String?
+  email             String?
+  sitioWeb          String?
+  categorias        String[]          // Array de categorías
+  condicionesPago   String?           // 30 días, 60 días, etc.
+  descuento         Decimal?          @db.Decimal(5, 2) // Porcentaje
+  observaciones     String?
+  estado            String            @default("activo")
+  fechaCreacion     DateTime          @default(now())
+  fechaActualizacion DateTime         @updatedAt
+  // Relaciones
+  contactos         ContactoProveedor[]
+}
+
+// Contactos de proveedor
+model ContactoProveedor {
+  id                Int               @id @default(autoincrement())
+  proveedorId       Int
+  proveedor         Proveedor         @relation(fields: [proveedorId], references: [id])
+  nombre            String
+  cargo             String?
+  telefono          String?
+  email             String?
+  esPrincipal       Boolean           @default(false)
+  observaciones     String?
+}

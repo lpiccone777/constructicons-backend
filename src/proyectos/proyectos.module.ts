@@ -14,12 +14,16 @@ import { DocumentosController } from './documentos/documentos.controller';
 import { DocumentosService } from './documentos/documentos.service';
 import { NotasController } from './notas/notas.controller';
 import { NotasService } from './notas/notas.service';
+import { MaterialesController } from './materiales/materiales.controller';
+import { MaterialesService } from './materiales/materiales.service';
+import { ProveedoresController } from './proveedores/proveedores.controller';
+import { ProveedoresService } from './proveedores/proveedores.service';
 
 @Module({
   imports: [
     PrismaModule,
     AuditoriaModule,
-    PermisosModule  // Añadimos el módulo de permisos
+    PermisosModule
   ],
   controllers: [
     ProyectosController,
@@ -27,7 +31,9 @@ import { NotasService } from './notas/notas.service';
     TareasController,
     AsignacionesController,
     DocumentosController,
-    NotasController
+    NotasController,
+    MaterialesController,
+    ProveedoresController
   ],
   providers: [
     ProyectosService,
@@ -35,13 +41,17 @@ import { NotasService } from './notas/notas.service';
     TareasService,
     AsignacionesService,
     DocumentosService,
-    NotasService
+    NotasService,
+    MaterialesService,
+    ProveedoresService
   ],
   exports: [
     ProyectosService,
     EtapasService,
     TareasService,
-    AsignacionesService
+    AsignacionesService,
+    MaterialesService,
+    ProveedoresService
   ]
 })
 export class ProyectosModule {}
