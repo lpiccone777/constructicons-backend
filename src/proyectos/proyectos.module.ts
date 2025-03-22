@@ -1,3 +1,5 @@
+// src/proyectos/proyectos.module.ts
+
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
@@ -18,6 +20,11 @@ import { MaterialesController } from './materiales/materiales.controller';
 import { MaterialesService } from './materiales/materiales.service';
 import { ProveedoresController } from './proveedores/proveedores.controller';
 import { ProveedoresService } from './proveedores/proveedores.service';
+import { AsignacionesMaterialesController } from './asignaciones-materiales/asignaciones-materiales.controller';
+import { AsignacionesMaterialesService } from './asignaciones-materiales/asignaciones-materiales.service';
+// Importar nuevos componentes
+import { MaterialesProveedoresController } from './materiales-proveedores/materiales-proveedores.controller';
+import { MaterialesProveedoresService } from './materiales-proveedores/materiales-proveedores.service';
 
 @Module({
   imports: [
@@ -33,7 +40,9 @@ import { ProveedoresService } from './proveedores/proveedores.service';
     DocumentosController,
     NotasController,
     MaterialesController,
-    ProveedoresController
+    ProveedoresController,
+    AsignacionesMaterialesController,
+    MaterialesProveedoresController // Nuevo controlador
   ],
   providers: [
     ProyectosService,
@@ -43,7 +52,9 @@ import { ProveedoresService } from './proveedores/proveedores.service';
     DocumentosService,
     NotasService,
     MaterialesService,
-    ProveedoresService
+    ProveedoresService,
+    AsignacionesMaterialesService,
+    MaterialesProveedoresService // Nuevo servicio
   ],
   exports: [
     ProyectosService,
@@ -51,7 +62,9 @@ import { ProveedoresService } from './proveedores/proveedores.service';
     TareasService,
     AsignacionesService,
     MaterialesService,
-    ProveedoresService
+    ProveedoresService,
+    AsignacionesMaterialesService,
+    MaterialesProveedoresService // Exportar nuevo servicio
   ]
 })
 export class ProyectosModule {}

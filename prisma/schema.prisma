@@ -111,6 +111,7 @@ model TareaProyecto {
   asignado          AsignacionTarea[]
   fechaCreacion     DateTime          @default(now())
   fechaActualizacion DateTime         @updatedAt
+  materialesAsignados AsignacionMaterial[]
 }
 
 // Modelo para asignación de empleados a proyectos
@@ -180,6 +181,8 @@ model Material {
   stockMinimo       Decimal?          @db.Decimal(12, 2)
   fechaCreacion     DateTime          @default(now())
   fechaActualizacion DateTime         @updatedAt
+  asignaciones      AsignacionMaterial[]
+  proveedores      MaterialProveedor[]
 }
 
 // Modelo para proveedores
@@ -206,6 +209,7 @@ model Proveedor {
   fechaActualizacion DateTime         @updatedAt
   // Relaciones
   contactos         ContactoProveedor[]
+  materiales       MaterialProveedor[]
 }
 
 // Contactos de proveedor
@@ -219,4 +223,40 @@ model ContactoProveedor {
   email             String?
   esPrincipal       Boolean           @default(false)
   observaciones     String?
+}
+// Añadir al final del archivo prisma/schema.prisma
+
+// Modelo para la asignación de materiales a tareas
+model AsignacionMaterial {
+  id                Int               @id @default(autoincrement())
+  materialId        Int
+  material          Material          @relation(fields: [materialId], references: [id])
+  tareaId           Int
+  tarea             TareaProyecto     @relation(fields: [tareaId], references: [id])
+  cantidad          Decimal           @db.Decimal(12, 2)
+  unidadMedida      String            // Se guarda para mantener coherencia histórica
+  estado            String            @default("pendiente") // pendiente, solicitado, comprado, entregado
+  observaciones     String?
+  fechaAsignacion   DateTime          @default(now())
+  fechaActualizacion DateTime         @updatedAt
+  
+  @@unique([materialId, tareaId])
+}
+// Modelo para relacionar materiales y proveedores con precios
+model MaterialProveedor {
+  id                Int               @id @default(autoincrement())
+  materialId        Int
+  material          Material          @relation(fields: [materialId], references: [id])
+  proveedorId       Int
+  proveedor         Proveedor         @relation(fields: [proveedorId], references: [id])
+  precio            Decimal           @db.Decimal(12, 2)
+  unidadMedida      String            // Se guarda para mantener coherencia histórica
+  tiempoEntrega     String?           // Tiempo estimado de entrega (ej: "2-3 días")
+  cantidadMinima    Decimal?          @db.Decimal(12, 2) // Cantidad mínima de pedido
+  observaciones     String?
+  esProveedorPrincipal Boolean        @default(false)
+  fechaActualizacion DateTime         @updatedAt
+  fechaCreacion     DateTime          @default(now())
+  
+  @@unique([materialId, proveedorId])
 }
