@@ -6,49 +6,50 @@ import {
   IsNotEmpty,
   IsIn,
   IsUrl,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
 
 export class CreateDocumentoDto {
-  @ApiProperty({ 
-    example: 1, 
-    description: 'ID del proyecto al que pertenece el documento' 
+  @ApiProperty({
+    example: 1,
+    description: 'ID del proyecto al que pertenece el documento',
   })
   @IsNumber()
   @IsNotEmpty()
   proyectoId!: number;
 
-  @ApiProperty({ 
-    example: 'Plano arquitectónico - Planta baja', 
-    description: 'Nombre del documento' 
+  @ApiProperty({
+    example: 'Plano arquitectónico - Planta baja',
+    description: 'Nombre del documento',
   })
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
   nombre!: string;
 
-  @ApiPropertyOptional({ 
-    example: 'Plano detallado de la distribución de espacios en planta baja', 
-    description: 'Descripción del documento' 
+  @ApiPropertyOptional({
+    example: 'Plano detallado de la distribución de espacios en planta baja',
+    description: 'Descripción del documento',
   })
   @IsString()
   @IsOptional()
   @MaxLength(500)
   descripcion?: string;
 
-  @ApiProperty({ 
-    example: 'plano', 
+  @ApiProperty({
+    example: 'plano',
     description: 'Tipo de documento',
-    enum: ['plano', 'contrato', 'permiso', 'informe', 'presupuesto', 'otro'] 
+    enum: ['plano', 'contrato', 'permiso', 'informe', 'presupuesto', 'otro'],
   })
   @IsString()
   @IsNotEmpty()
   @IsIn(['plano', 'contrato', 'permiso', 'informe', 'presupuesto', 'otro'])
   tipo!: string;
 
-  @ApiProperty({ 
-    example: 'https://storage.constructicons.com/documentos/proyecto1/plano-pb.pdf', 
-    description: 'URL de almacenamiento del archivo' 
+  @ApiProperty({
+    example:
+      'https://storage.constructicons.com/documentos/proyecto1/plano-pb.pdf',
+    description: 'URL de almacenamiento del archivo',
   })
   @IsString()
   @IsNotEmpty()

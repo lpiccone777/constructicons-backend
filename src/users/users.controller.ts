@@ -1,15 +1,15 @@
 // src/users/users.controller.ts
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Put, 
-  Delete, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
   UseGuards,
   Request,
-  ParseIntPipe
+  ParseIntPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
@@ -24,9 +24,7 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @RequirePermissions('usuarios.leer')
@@ -59,7 +57,7 @@ export class UsersController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     return this.usersService.update(id, updateUserDto, req.user.id);
   }

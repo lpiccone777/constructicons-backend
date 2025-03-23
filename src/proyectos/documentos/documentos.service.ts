@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { CreateDocumentoDto } from './dto/create-documento.dto';
@@ -13,15 +17,15 @@ export class DocumentosService {
 
   async findAll(proyectoId?: number, tipo?: string) {
     const where: any = {};
-    
+
     if (proyectoId !== undefined) {
       where.proyectoId = proyectoId;
     }
-    
+
     if (tipo) {
       where.tipo = tipo;
     }
-    
+
     return this.prisma.documentoProyecto.findMany({
       where,
       include: {
@@ -29,21 +33,18 @@ export class DocumentosService {
           select: {
             id: true,
             codigo: true,
-            nombre: true
-          }
+            nombre: true,
+          },
         },
         usuarioCarga: {
           select: {
             id: true,
             nombre: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
-      orderBy: [
-        { proyectoId: 'asc' },
-        { fechaCarga: 'desc' }
-      ]
+      orderBy: [{ proyectoId: 'asc' }, { fechaCarga: 'desc' }],
     });
   }
 
@@ -56,17 +57,17 @@ export class DocumentosService {
             id: true,
             codigo: true,
             nombre: true,
-            estado: true
-          }
+            estado: true,
+          },
         },
         usuarioCarga: {
           select: {
             id: true,
             nombre: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     if (!documento) {
@@ -79,19 +80,21 @@ export class DocumentosService {
   async create(createDto: CreateDocumentoDto, usuarioId: number) {
     // Verificar si el proyecto existe
     const proyecto = await this.prisma.proyecto.findUnique({
-      where: { id: createDto.proyectoId }
+      where: { id: createDto.proyectoId },
     });
 
     if (!proyecto) {
-      throw new NotFoundException(`Proyecto con ID ${createDto.proyectoId} no encontrado`);
+      throw new NotFoundException(
+        `Proyecto con ID ${createDto.proyectoId} no encontrado`,
+      );
     }
 
     // Crear el documento
     const nuevoDocumento = await this.prisma.documentoProyecto.create({
       data: {
         ...createDto,
-        usuarioCargaId: usuarioId
-      }
+        usuarioCargaId: usuarioId,
+      },
     });
 
     // Registrar en auditoría
@@ -103,8 +106,8 @@ export class DocumentosService {
       {
         proyectoId: nuevoDocumento.proyectoId,
         nombre: nuevoDocumento.nombre,
-        tipo: nuevoDocumento.tipo
-      }
+        tipo: nuevoDocumento.tipo,
+      },
     );
 
     return nuevoDocumento;
@@ -113,7 +116,7 @@ export class DocumentosService {
   async update(id: number, updateDto: UpdateDocumentoDto, usuarioId: number) {
     // Verificar si el documento existe
     const documento = await this.prisma.documentoProyecto.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!documento) {
@@ -123,7 +126,7 @@ export class DocumentosService {
     // Actualizar el documento
     const documentoActualizado = await this.prisma.documentoProyecto.update({
       where: { id },
-      data: updateDto
+      data: updateDto,
     });
 
     // Registrar en auditoría
@@ -132,7 +135,7 @@ export class DocumentosService {
       'actualización',
       'DocumentoProyecto',
       id.toString(),
-      { cambios: updateDto }
+      { cambios: updateDto },
     );
 
     return documentoActualizado;
@@ -141,7 +144,7 @@ export class DocumentosService {
   async delete(id: number, usuarioId: number) {
     // Verificar si el documento existe
     const documento = await this.prisma.documentoProyecto.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!documento) {
@@ -150,7 +153,7 @@ export class DocumentosService {
 
     // Eliminar el documento
     await this.prisma.documentoProyecto.delete({
-      where: { id }
+      where: { id },
     });
 
     // Registrar en auditoría
@@ -162,8 +165,8 @@ export class DocumentosService {
       {
         proyectoId: documento.proyectoId,
         nombre: documento.nombre,
-        tipo: documento.tipo
-      }
+        tipo: documento.tipo,
+      },
     );
   }
 }

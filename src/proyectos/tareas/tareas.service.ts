@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { CreateTareaDto } from './dto/create-tarea.dto';
@@ -13,11 +17,11 @@ export class TareasService {
 
   async findAll(etapaId?: number) {
     const where: Record<string, any> = {};
-    
+
     if (etapaId) {
       where.etapaId = etapaId;
     }
-    
+
     return this.prisma.tareaProyecto.findMany({
       where,
       include: {
@@ -29,10 +33,10 @@ export class TareasService {
               select: {
                 id: true,
                 codigo: true,
-                nombre: true
-              }
-            }
-          }
+                nombre: true,
+              },
+            },
+          },
         },
         asignado: {
           where: { activo: true },
@@ -41,16 +45,13 @@ export class TareasService {
               select: {
                 id: true,
                 nombre: true,
-                email: true
-              }
-            }
-          }
-        }
+                email: true,
+              },
+            },
+          },
+        },
       },
-      orderBy: [
-        { etapaId: 'asc' },
-        { orden: 'asc' }
-      ]
+      orderBy: [{ etapaId: 'asc' }, { orden: 'asc' }],
     });
   }
 
@@ -67,10 +68,10 @@ export class TareasService {
                 id: true,
                 codigo: true,
                 nombre: true,
-                estado: true
-              }
-            }
-          }
+                estado: true,
+              },
+            },
+          },
         },
         asignado: {
           include: {
@@ -78,12 +79,12 @@ export class TareasService {
               select: {
                 id: true,
                 nombre: true,
-                email: true
-              }
-            }
-          }
-        }
-      }
+                email: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!tarea) {
@@ -98,55 +99,68 @@ export class TareasService {
     const etapa = await this.prisma.etapaProyecto.findUnique({
       where: { id: createTareaDto.etapaId },
       include: {
-        proyecto: true
-      }
+        proyecto: true,
+      },
     });
 
     if (!etapa) {
-      throw new NotFoundException(`Etapa con ID ${createTareaDto.etapaId} no encontrada`);
+      throw new NotFoundException(
+        `Etapa con ID ${createTareaDto.etapaId} no encontrada`,
+      );
     }
 
     // Verificar si el proyecto está en un estado que permite crear tareas
-    if (etapa.proyecto.estado === 'finalizado' || etapa.proyecto.estado === 'cancelado') {
-      throw new ConflictException(`No se pueden crear tareas en un proyecto ${etapa.proyecto.estado}`);
+    if (
+      etapa.proyecto.estado === 'finalizado' ||
+      etapa.proyecto.estado === 'cancelado'
+    ) {
+      throw new ConflictException(
+        `No se pueden crear tareas en un proyecto ${etapa.proyecto.estado}`,
+      );
     }
 
     // Verificar si ya existe una tarea con el mismo orden en esta etapa
     const existingTarea = await this.prisma.tareaProyecto.findFirst({
       where: {
         etapaId: createTareaDto.etapaId,
-        orden: createTareaDto.orden
-      }
+        orden: createTareaDto.orden,
+      },
     });
 
     if (existingTarea) {
-      throw new ConflictException(`Ya existe una tarea con el orden ${createTareaDto.orden} en esta etapa`);
+      throw new ConflictException(
+        `Ya existe una tarea con el orden ${createTareaDto.orden} en esta etapa`,
+      );
     }
 
     // Convertir fechas si existen
     const tareaData = {
       ...createTareaDto,
-      fechaInicio: createTareaDto.fechaInicio ? new Date(createTareaDto.fechaInicio) : null,
-      fechaFinEstimada: createTareaDto.fechaFinEstimada ? new Date(createTareaDto.fechaFinEstimada) : null,
+      fechaInicio: createTareaDto.fechaInicio
+        ? new Date(createTareaDto.fechaInicio)
+        : null,
+      fechaFinEstimada: createTareaDto.fechaFinEstimada
+        ? new Date(createTareaDto.fechaFinEstimada)
+        : null,
     };
 
     // Crear la tarea
     const nuevaTarea = await this.prisma.tareaProyecto.create({
-      data: tareaData
+      data: tareaData,
     });
 
     // Si la etapa estaba en estado 'pendiente', actualizarla a 'en_progreso'
     if (etapa.estado === 'pendiente') {
       await this.prisma.etapaProyecto.update({
         where: { id: etapa.id },
-        data: { estado: 'en_progreso' }
+        data: { estado: 'en_progreso' },
       });
-      
+
       // Si el proyecto estaba en planificación, actualizarlo a ejecución
       if (etapa.proyecto.estado === 'planificacion') {
         await this.prisma.proyecto.update({
           where: { id: etapa.proyecto.id },
-          data: { estado: 'ejecucion' }
+          data: { estado: 'ejecucion' },
         });
       }
     }
@@ -160,8 +174,8 @@ export class TareasService {
       {
         nombre: nuevaTarea.nombre,
         etapaId: nuevaTarea.etapaId,
-        orden: nuevaTarea.orden
-      }
+        orden: nuevaTarea.orden,
+      },
     );
 
     return nuevaTarea;
@@ -174,10 +188,10 @@ export class TareasService {
       include: {
         etapa: {
           include: {
-            proyecto: true
-          }
-        }
-      }
+            proyecto: true,
+          },
+        },
+      },
     });
 
     if (!tarea) {
@@ -185,8 +199,13 @@ export class TareasService {
     }
 
     // Verificar si el proyecto está en un estado que permite actualizar tareas
-    if (tarea.etapa.proyecto.estado === 'finalizado' || tarea.etapa.proyecto.estado === 'cancelado') {
-      throw new ConflictException(`No se pueden actualizar tareas en un proyecto ${tarea.etapa.proyecto.estado}`);
+    if (
+      tarea.etapa.proyecto.estado === 'finalizado' ||
+      tarea.etapa.proyecto.estado === 'cancelado'
+    ) {
+      throw new ConflictException(
+        `No se pueden actualizar tareas en un proyecto ${tarea.etapa.proyecto.estado}`,
+      );
     }
 
     // Verificar si se está actualizando el orden y si ya existe
@@ -195,26 +214,28 @@ export class TareasService {
         where: {
           etapaId: tarea.etapaId,
           orden: updateTareaDto.orden,
-          id: { not: id }  // Excluir la tarea actual
-        }
+          id: { not: id }, // Excluir la tarea actual
+        },
       });
 
       if (existingTarea) {
-        throw new ConflictException(`Ya existe una tarea con el orden ${updateTareaDto.orden} en esta etapa`);
+        throw new ConflictException(
+          `Ya existe una tarea con el orden ${updateTareaDto.orden} en esta etapa`,
+        );
       }
     }
 
     // Preparar datos para actualización
     const updateData: any = { ...updateTareaDto };
-    
+
     if (updateTareaDto.fechaInicio) {
       updateData.fechaInicio = new Date(updateTareaDto.fechaInicio);
     }
-    
+
     if (updateTareaDto.fechaFinEstimada) {
       updateData.fechaFinEstimada = new Date(updateTareaDto.fechaFinEstimada);
     }
-    
+
     if (updateTareaDto.fechaFinReal) {
       updateData.fechaFinReal = new Date(updateTareaDto.fechaFinReal);
     }
@@ -222,60 +243,68 @@ export class TareasService {
     // Actualizar la tarea
     const tareaActualizada = await this.prisma.tareaProyecto.update({
       where: { id },
-      data: updateData
+      data: updateData,
     });
 
     // Si se cambia el estado a 'completada', verificar si todas las tareas de la etapa están completadas
-    if (updateTareaDto.estado === 'completada' && tarea.estado !== 'completada') {
+    if (
+      updateTareaDto.estado === 'completada' &&
+      tarea.estado !== 'completada'
+    ) {
       const tareasDeEtapa = await this.prisma.tareaProyecto.findMany({
         where: {
           etapaId: tarea.etapaId,
-          id: { not: id }  // Excluir la tarea actual
-        }
+          id: { not: id }, // Excluir la tarea actual
+        },
       });
-      
-      const allCompleted = tareasDeEtapa.every(t => t.estado === 'completada');
-      
+
+      const allCompleted = tareasDeEtapa.every(
+        (t) => t.estado === 'completada',
+      );
+
       if (allCompleted || tareasDeEtapa.length === 0) {
         // Actualizar la etapa a 'completada'
         await this.prisma.etapaProyecto.update({
           where: { id: tarea.etapaId },
-          data: { 
+          data: {
             estado: 'completada',
             avance: 100,
-            fechaFinReal: new Date()
-          }
+            fechaFinReal: new Date(),
+          },
         });
-        
+
         // Verificar si todas las etapas del proyecto están completadas
         const etapasDeProyecto = await this.prisma.etapaProyecto.findMany({
           where: {
             proyectoId: tarea.etapa.proyecto.id,
-            id: { not: tarea.etapaId }  // Excluir la etapa actual
-          }
+            id: { not: tarea.etapaId }, // Excluir la etapa actual
+          },
         });
-        
-        const allEtapasCompleted = etapasDeProyecto.every(e => e.estado === 'completada');
-        
+
+        const allEtapasCompleted = etapasDeProyecto.every(
+          (e) => e.estado === 'completada',
+        );
+
         if (allEtapasCompleted || etapasDeProyecto.length === 0) {
           // Actualizar el proyecto a 'finalizado'
           await this.prisma.proyecto.update({
             where: { id: tarea.etapa.proyecto.id },
-            data: { 
+            data: {
               estado: 'finalizado',
-              fechaFinReal: new Date()
-            }
+              fechaFinReal: new Date(),
+            },
           });
         }
       } else {
         // Actualizar avance de la etapa
         const totalTareas = tareasDeEtapa.length + 1; // Incluyendo la tarea actual
-        const tareasCompletadas = tareasDeEtapa.filter(t => t.estado === 'completada').length + 1; // +1 por la tarea actual
+        const tareasCompletadas =
+          tareasDeEtapa.filter((t) => t.estado === 'completada').length + 1; // +1 por la tarea actual
         const nuevoAvance = Math.floor((tareasCompletadas / totalTareas) * 100);
-        
+
         await this.prisma.etapaProyecto.update({
           where: { id: tarea.etapaId },
-          data: { avance: nuevoAvance }
+          data: { avance: nuevoAvance },
         });
       }
     }
@@ -286,7 +315,7 @@ export class TareasService {
       'actualización',
       'TareaProyecto',
       id.toString(),
-      { cambios: updateTareaDto }
+      { cambios: updateTareaDto },
     );
 
     return tareaActualizada;
@@ -300,10 +329,10 @@ export class TareasService {
         asignado: true,
         etapa: {
           include: {
-            proyecto: true
-          }
-        }
-      }
+            proyecto: true,
+          },
+        },
+      },
     });
 
     if (!tarea) {
@@ -311,8 +340,13 @@ export class TareasService {
     }
 
     // Verificar si el proyecto está en un estado que permite eliminar tareas
-    if (tarea.etapa.proyecto.estado === 'finalizado' || tarea.etapa.proyecto.estado === 'cancelado') {
-      throw new ConflictException(`No se pueden eliminar tareas en un proyecto ${tarea.etapa.proyecto.estado}`);
+    if (
+      tarea.etapa.proyecto.estado === 'finalizado' ||
+      tarea.etapa.proyecto.estado === 'cancelado'
+    ) {
+      throw new ConflictException(
+        `No se pueden eliminar tareas en un proyecto ${tarea.etapa.proyecto.estado}`,
+      );
     }
 
     // Usar una transacción para eliminar la tarea y sus asignaciones
@@ -320,13 +354,13 @@ export class TareasService {
       // Eliminar asignaciones de la tarea
       if (tarea.asignado.length > 0) {
         await prisma.asignacionTarea.deleteMany({
-          where: { tareaId: id }
+          where: { tareaId: id },
         });
       }
-      
+
       // Eliminar la tarea
       await prisma.tareaProyecto.delete({
-        where: { id }
+        where: { id },
       });
     });
 
@@ -339,33 +373,41 @@ export class TareasService {
       {
         nombre: tarea.nombre,
         etapaId: tarea.etapaId,
-        orden: tarea.orden
-      }
+        orden: tarea.orden,
+      },
     );
 
     // Actualizar avance de la etapa
     const tareasDeEtapa = await this.prisma.tareaProyecto.findMany({
-      where: { etapaId: tarea.etapaId }
+      where: { etapaId: tarea.etapaId },
     });
-    
+
     if (tareasDeEtapa.length > 0) {
-      const tareasCompletadas = tareasDeEtapa.filter(t => t.estado === 'completada').length;
-      const nuevoAvance = Math.floor((tareasCompletadas / tareasDeEtapa.length) * 100);
-      
+      const tareasCompletadas = tareasDeEtapa.filter(
+        (t) => t.estado === 'completada',
+      ).length;
+      const nuevoAvance = Math.floor(
+        (tareasCompletadas / tareasDeEtapa.length) * 100,
+      );
+
       await this.prisma.etapaProyecto.update({
         where: { id: tarea.etapaId },
-        data: { avance: nuevoAvance }
+        data: { avance: nuevoAvance },
       });
     }
   }
 
-  async reordenarTareas(etapaId: number, nuevosOrdenes: { id: number, orden: number }[], usuarioId: number) {
+  async reordenarTareas(
+    etapaId: number,
+    nuevosOrdenes: { id: number; orden: number }[],
+    usuarioId: number,
+  ) {
     // Verificar si la etapa existe
     const etapa = await this.prisma.etapaProyecto.findUnique({
       where: { id: etapaId },
       include: {
-        tareas: true
-      }
+        tareas: true,
+      },
     });
 
     if (!etapa) {
@@ -373,21 +415,25 @@ export class TareasService {
     }
 
     // Verificar que todas las tareas pertenezcan a esta etapa
-    const tareaIds = etapa.tareas.map(t => t.id);
-    const idsInvalidos = nuevosOrdenes.filter(no => !tareaIds.includes(no.id));
+    const tareaIds = etapa.tareas.map((t) => t.id);
+    const idsInvalidos = nuevosOrdenes.filter(
+      (no) => !tareaIds.includes(no.id),
+    );
 
     if (idsInvalidos.length > 0) {
-      throw new ConflictException(`Las siguientes tareas no pertenecen a esta etapa: ${idsInvalidos.map(i => i.id).join(', ')}`);
+      throw new ConflictException(
+        `Las siguientes tareas no pertenecen a esta etapa: ${idsInvalidos.map((i) => i.id).join(', ')}`,
+      );
     }
 
     // Usar una transacción para actualizar todos los órdenes
     await this.prisma.$transaction(
-      nuevosOrdenes.map(no => 
+      nuevosOrdenes.map((no) =>
         this.prisma.tareaProyecto.update({
           where: { id: no.id },
-          data: { orden: no.orden }
-        })
-      )
+          data: { orden: no.orden },
+        }),
+      ),
     );
 
     // Registrar en auditoría
@@ -396,7 +442,7 @@ export class TareasService {
       'actualización',
       'TareaProyecto',
       'multiple',
-      { accion: 'reordenamiento', etapaId, tareas: nuevosOrdenes }
+      { accion: 'reordenamiento', etapaId, tareas: nuevosOrdenes },
     );
 
     return await this.findAll(etapaId);

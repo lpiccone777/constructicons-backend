@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
@@ -14,20 +18,20 @@ export class MaterialesService {
 
   async findAll(categoria?: string) {
     const where: Record<string, any> = {};
-    
+
     if (categoria) {
       where.categoria = categoria;
     }
-    
+
     return this.prisma.material.findMany({
       where,
-      orderBy: { nombre: 'asc' }
+      orderBy: { nombre: 'asc' },
     });
   }
 
   async findById(id: number) {
     const material = await this.prisma.material.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!material) {
@@ -40,23 +44,27 @@ export class MaterialesService {
   async create(createMaterialDto: CreateMaterialDto, usuarioId: number) {
     // Verificar si ya existe un material con el mismo código
     const existingMaterial = await this.prisma.material.findUnique({
-      where: { codigo: createMaterialDto.codigo }
+      where: { codigo: createMaterialDto.codigo },
     });
 
     if (existingMaterial) {
-      throw new ConflictException(`Ya existe un material con el código ${createMaterialDto.codigo}`);
+      throw new ConflictException(
+        `Ya existe un material con el código ${createMaterialDto.codigo}`,
+      );
     }
 
     // Convertir datos de string a tipos apropiados
     const materialData = {
       ...createMaterialDto,
       precioReferencia: new Decimal(createMaterialDto.precioReferencia),
-      stockMinimo: createMaterialDto.stockMinimo ? new Decimal(createMaterialDto.stockMinimo) : null,
+      stockMinimo: createMaterialDto.stockMinimo
+        ? new Decimal(createMaterialDto.stockMinimo)
+        : null,
     };
 
     // Crear el material
     const nuevoMaterial = await this.prisma.material.create({
-      data: materialData
+      data: materialData,
     });
 
     // Registrar en auditoría
@@ -68,17 +76,21 @@ export class MaterialesService {
       {
         codigo: nuevoMaterial.codigo,
         nombre: nuevoMaterial.nombre,
-        categoria: nuevoMaterial.categoria
-      }
+        categoria: nuevoMaterial.categoria,
+      },
     );
 
     return nuevoMaterial;
   }
 
-  async update(id: number, updateMaterialDto: UpdateMaterialDto, usuarioId: number) {
+  async update(
+    id: number,
+    updateMaterialDto: UpdateMaterialDto,
+    usuarioId: number,
+  ) {
     // Verificar si el material existe
     const material = await this.prisma.material.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!material) {
@@ -86,23 +98,30 @@ export class MaterialesService {
     }
 
     // Verificar si se está actualizando el código y si ya existe
-    if (updateMaterialDto.codigo && updateMaterialDto.codigo !== material.codigo) {
+    if (
+      updateMaterialDto.codigo &&
+      updateMaterialDto.codigo !== material.codigo
+    ) {
       const existingMaterial = await this.prisma.material.findUnique({
-        where: { codigo: updateMaterialDto.codigo }
+        where: { codigo: updateMaterialDto.codigo },
       });
 
       if (existingMaterial) {
-        throw new ConflictException(`Ya existe un material con el código ${updateMaterialDto.codigo}`);
+        throw new ConflictException(
+          `Ya existe un material con el código ${updateMaterialDto.codigo}`,
+        );
       }
     }
 
     // Preparar datos para actualización
     const updateData: any = { ...updateMaterialDto };
-    
+
     if (updateMaterialDto.precioReferencia) {
-      updateData.precioReferencia = new Decimal(updateMaterialDto.precioReferencia);
+      updateData.precioReferencia = new Decimal(
+        updateMaterialDto.precioReferencia,
+      );
     }
-    
+
     if (updateMaterialDto.stockMinimo) {
       updateData.stockMinimo = new Decimal(updateMaterialDto.stockMinimo);
     }
@@ -110,7 +129,7 @@ export class MaterialesService {
     // Actualizar el material
     const materialActualizado = await this.prisma.material.update({
       where: { id },
-      data: updateData
+      data: updateData,
     });
 
     // Registrar en auditoría
@@ -119,7 +138,7 @@ export class MaterialesService {
       'actualización',
       'Material',
       id.toString(),
-      { cambios: updateMaterialDto }
+      { cambios: updateMaterialDto },
     );
 
     return materialActualizado;
@@ -128,7 +147,7 @@ export class MaterialesService {
   async delete(id: number, usuarioId: number) {
     // Verificar si el material existe
     const material = await this.prisma.material.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!material) {
@@ -137,7 +156,7 @@ export class MaterialesService {
 
     // Eliminar el material
     await this.prisma.material.delete({
-      where: { id }
+      where: { id },
     });
 
     // Registrar en auditoría
@@ -148,8 +167,8 @@ export class MaterialesService {
       id.toString(),
       {
         codigo: material.codigo,
-        nombre: material.nombre
-      }
+        nombre: material.nombre,
+      },
     );
   }
 
@@ -157,9 +176,9 @@ export class MaterialesService {
     // Obtener materiales agrupados por categoría
     const categorias = await this.prisma.material.groupBy({
       by: ['categoria'],
-      _count: true
+      _count: true,
     });
-    
+
     return categorias;
   }
 }

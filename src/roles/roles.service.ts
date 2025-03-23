@@ -35,32 +35,36 @@ export class RolesService {
             where: { nombre: permisoNombre },
           });
           if (!permiso) {
-            throw new NotFoundException(`Permiso ${permisoNombre} no encontrado`);
+            throw new NotFoundException(
+              `Permiso ${permisoNombre} no encontrado`,
+            );
           }
           return { id: permiso.id };
-        })
+        }),
       );
     }
-    
+
     // Crear rol
     const nuevoRol = await this.prisma.rol.create({
       data: {
         nombre: data.nombre,
         descripcion: data.descripcion,
-        ...(permisosToConnect.length > 0 ? { permisos: { connect: permisosToConnect } } : {}),
+        ...(permisosToConnect.length > 0
+          ? { permisos: { connect: permisosToConnect } }
+          : {}),
       },
       include: { permisos: true },
     });
-    
+
     // Registrar auditoría
     await this.auditoriaService.registrarAccion(
       usuarioCreadorId,
       'inserción',
       'Rol',
       nuevoRol.id.toString(),
-      { nombre: nuevoRol.nombre, permisos: data.permisos }
+      { nombre: nuevoRol.nombre, permisos: data.permisos },
     );
-    
+
     return nuevoRol;
   }
 
@@ -70,16 +74,16 @@ export class RolesService {
       where: { id },
       include: { permisos: true },
     });
-    
+
     if (!rolExistente) {
       throw new NotFoundException(`Rol con ID ${id} no encontrado`);
     }
-    
+
     // Preparar datos de actualización
     const updateData: any = {};
     if (data.nombre) updateData.nombre = data.nombre;
     if (data.descripcion) updateData.descripcion = data.descripcion;
-    
+
     // Preparar permisos si se proporcionan
     let permisosToConnect: { id: number }[] = [];
     if (data.permisos && data.permisos.length > 0) {
@@ -89,13 +93,15 @@ export class RolesService {
             where: { nombre: permisoNombre },
           });
           if (!permiso) {
-            throw new NotFoundException(`Permiso ${permisoNombre} no encontrado`);
+            throw new NotFoundException(
+              `Permiso ${permisoNombre} no encontrado`,
+            );
           }
           return { id: permiso.id };
-        })
+        }),
       );
     }
-    
+
     // Realizar actualización en una transacción
     const rolActualizado = await this.prisma.$transaction(async (prisma) => {
       // Si hay nuevos permisos, primero desconectamos los anteriores
@@ -104,61 +110,67 @@ export class RolesService {
           where: { id },
           data: {
             permisos: {
-              disconnect: rolExistente.permisos.map(permiso => ({ id: permiso.id })),
+              disconnect: rolExistente.permisos.map((permiso) => ({
+                id: permiso.id,
+              })),
             },
           },
         });
       }
-      
+
       // Ahora actualizamos con los nuevos datos
       return prisma.rol.update({
         where: { id },
         data: {
           ...updateData,
-          ...(permisosToConnect.length > 0 ? { permisos: { connect: permisosToConnect } } : {}),
+          ...(permisosToConnect.length > 0
+            ? { permisos: { connect: permisosToConnect } }
+            : {}),
         },
         include: { permisos: true },
       });
     });
-    
+
     // Registrar auditoría
     await this.auditoriaService.registrarAccion(
       usuarioModificadorId,
       'actualización',
       'Rol',
       id.toString(),
-      { cambios: data }
+      { cambios: data },
     );
-    
+
     return rolActualizado;
   }
 
   async delete(id: number, usuarioEliminadorId: number) {
     // Verificar existencia del rol
-    const rol = await this.prisma.rol.findUnique({ 
+    const rol = await this.prisma.rol.findUnique({
       where: { id },
-      include: { usuarios: true }
+      include: { usuarios: true },
     });
-    
+
     if (!rol) {
       throw new NotFoundException(`Rol con ID ${id} no encontrado`);
     }
-    
+
     // Verificar si el rol tiene usuarios asignados
     if (rol.usuarios.length > 0) {
-      throw new NotFoundException(`No se puede eliminar el rol porque tiene ${rol.usuarios.length} usuarios asignados`);
+      throw new NotFoundException(
+        `No se puede eliminar el rol porque tiene ${rol.usuarios.length} usuarios asignados`,
+      );
     }
-    
+
     // Eliminar rol
     await this.prisma.rol.delete({ where: { id } });
-    
+
     // Registrar auditoría
     await this.auditoriaService.registrarAccion(
       usuarioEliminadorId,
       'borrado',
       'Rol',
       id.toString(),
-      { nombre: rol.nombre }
+      { nombre: rol.nombre },
     );
   }
 }

@@ -9,15 +9,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Habilitar validación global
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // Elimina propiedades no definidas en los DTOs
-    transform: true, // Transforma automáticamente los datos
-    forbidNonWhitelisted: true, // Lanza error si hay propiedades no definidas
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Elimina propiedades no definidas en los DTOs
+      transform: true, // Transforma automáticamente los datos
+      forbidNonWhitelisted: true, // Lanza error si hay propiedades no definidas
+    }),
+  );
 
   // Filtro global de excepciones (opcional, ya aplicado a través de APP_FILTER)
   app.useGlobalFilters(new AllExceptionsFilter());
-  
+
   // Interceptor global de registro (opcional, ya aplicado a través de APP_INTERCEPTOR)
   app.useGlobalInterceptors(new LoggingInterceptor());
 

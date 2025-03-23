@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -35,15 +42,15 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Verificar validez del token' })
   checkToken(@Request() req: any) {
-    return { 
-      valid: true, 
+    return {
+      valid: true,
       user: {
         id: req.user.id,
         email: req.user.email,
         roles: req.user.roles,
         permisos: req.user.permisos,
-        esSuperUsuario: req.user.esSuperUsuario
-      }
+        esSuperUsuario: req.user.esSuperUsuario,
+      },
     };
   }
 }

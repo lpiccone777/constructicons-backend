@@ -9,10 +9,10 @@ import { PermisosModule } from '../permisos/permisos.module';
 
 @Module({
   imports: [
-    PrismaModule, 
+    PrismaModule,
     forwardRef(() => AuthModule),
     AuditoriaModule,
-    PermisosModule
+    PermisosModule,
   ],
   providers: [UsersService],
   controllers: [UsersController],

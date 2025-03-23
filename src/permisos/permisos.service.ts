@@ -31,77 +31,87 @@ export class PermisosService {
         accion: data.accion,
       },
     });
-    
+
     // Registrar auditoría
     await this.auditoriaService.registrarAccion(
       usuarioCreadorId,
       'inserción',
       'Permiso',
       nuevoPermiso.id.toString(),
-      { nombre: nuevoPermiso.nombre, modulo: nuevoPermiso.modulo }
+      { nombre: nuevoPermiso.nombre, modulo: nuevoPermiso.modulo },
     );
-    
+
     return nuevoPermiso;
   }
 
-  async update(id: number, data: UpdatePermisoDto, usuarioModificadorId: number) {
+  async update(
+    id: number,
+    data: UpdatePermisoDto,
+    usuarioModificadorId: number,
+  ) {
     // Verificar existencia del permiso
     const permisoExistente = await this.prisma.permiso.findUnique({
       where: { id },
     });
-    
+
     if (!permisoExistente) {
       throw new NotFoundException(`Permiso con ID ${id} no encontrado`);
     }
-    
+
     // Actualizar permiso
     const permisoActualizado = await this.prisma.permiso.update({
       where: { id },
       data,
     });
-    
+
     // Registrar auditoría
     await this.auditoriaService.registrarAccion(
       usuarioModificadorId,
       'actualización',
       'Permiso',
       id.toString(),
-      { cambios: data }
+      { cambios: data },
     );
-    
+
     return permisoActualizado;
   }
 
   async delete(id: number, usuarioEliminadorId: number) {
     // Verificar existencia del permiso
-    const permiso = await this.prisma.permiso.findUnique({ 
+    const permiso = await this.prisma.permiso.findUnique({
       where: { id },
-      include: { roles: true }
+      include: { roles: true },
     });
-    
+
     if (!permiso) {
       throw new NotFoundException(`Permiso con ID ${id} no encontrado`);
     }
-    
+
     // Verificar si el permiso está asignado a roles
     if (permiso.roles.length > 0) {
-      throw new NotFoundException(`No se puede eliminar el permiso porque está asignado a ${permiso.roles.length} roles`);
+      throw new NotFoundException(
+        `No se puede eliminar el permiso porque está asignado a ${permiso.roles.length} roles`,
+      );
     }
-    
+
     // Eliminar permiso
     await this.prisma.permiso.delete({ where: { id } });
-    
+
     // Registrar auditoría
     await this.auditoriaService.registrarAccion(
       usuarioEliminadorId,
       'borrado',
       'Permiso',
       id.toString(),
-      { nombre: permiso.nombre }
+      { nombre: permiso.nombre },
     );
   }
 
-  async verificarPermiso(usuarioId: number, modulo: string, accion: string): Promise<boolean> {
+  async verificarPermiso(
+    usuarioId: number,
+    modulo: string,
+    accion: string,
+  ): Promise<boolean> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: usuarioId },
       include: {
@@ -122,7 +132,7 @@ export class PermisosService {
     // Verificar si alguno de los roles del usuario tiene el permiso requerido
     for (const rol of usuario.roles) {
       const tienePermiso = rol.permisos.some(
-        p => p.modulo === modulo && p.accion === accion
+        (p) => p.modulo === modulo && p.accion === accion,
       );
       if (tienePermiso) return true;
     }

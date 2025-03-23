@@ -1,15 +1,15 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Put, 
-  Delete, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
   UseGuards,
   Request,
   ParseIntPipe,
-  Query
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard';
@@ -17,7 +17,12 @@ import { RequirePermissions } from '../../auth/decorators/permissions.decorator'
 import { MaterialesService } from './materiales.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @ApiTags('materiales')
 @ApiBearerAuth()
@@ -30,7 +35,11 @@ export class MaterialesController {
   @RequirePermissions('proyectos.leer')
   @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Obtener todos los materiales' })
-  @ApiQuery({ name: 'categoria', required: false, description: 'Filtrar por categoría de material' })
+  @ApiQuery({
+    name: 'categoria',
+    required: false,
+    description: 'Filtrar por categoría de material',
+  })
   async findAll(@Query('categoria') categoria?: string) {
     return this.materialesService.findAll(categoria);
   }
@@ -56,8 +65,8 @@ export class MaterialesController {
   @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Crear un nuevo material' })
   async create(
-    @Body() createMaterialDto: CreateMaterialDto, 
-    @Request() req: any
+    @Body() createMaterialDto: CreateMaterialDto,
+    @Request() req: any,
   ) {
     return this.materialesService.create(createMaterialDto, req.user.id);
   }
@@ -69,7 +78,7 @@ export class MaterialesController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMaterialDto: UpdateMaterialDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     return this.materialesService.update(id, updateMaterialDto, req.user.id);
   }
@@ -78,10 +87,7 @@ export class MaterialesController {
   @RequirePermissions('proyectos.eliminar')
   @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Eliminar un material' })
-  async delete(
-    @Param('id', ParseIntPipe) id: number,
-    @Request() req: any
-  ) {
+  async delete(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     return this.materialesService.delete(id, req.user.id);
   }
 }

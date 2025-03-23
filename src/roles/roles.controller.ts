@@ -1,15 +1,15 @@
 // src/roles/roles.controller.ts
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Put, 
-  Delete, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
   UseGuards,
   Request,
-  ParseIntPipe
+  ParseIntPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesService } from './roles.service';
@@ -24,9 +24,7 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('roles')
 export class RolesController {
-  constructor(
-    private readonly rolesService: RolesService
-  ) {}
+  constructor(private readonly rolesService: RolesService) {}
 
   @Get()
   @RequirePermissions('roles.leer')
@@ -51,7 +49,7 @@ export class RolesController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateRolDto: UpdateRolDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     return this.rolesService.update(id, updateRolDto, req.user.id);
   }

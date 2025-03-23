@@ -27,11 +27,7 @@ import { MaterialesProveedoresController } from './materiales-proveedores/materi
 import { MaterialesProveedoresService } from './materiales-proveedores/materiales-proveedores.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    AuditoriaModule,
-    PermisosModule
-  ],
+  imports: [PrismaModule, AuditoriaModule, PermisosModule],
   controllers: [
     ProyectosController,
     EtapasController,
@@ -42,7 +38,7 @@ import { MaterialesProveedoresService } from './materiales-proveedores/materiale
     MaterialesController,
     ProveedoresController,
     AsignacionesMaterialesController,
-    MaterialesProveedoresController // Nuevo controlador
+    MaterialesProveedoresController, // Nuevo controlador
   ],
   providers: [
     ProyectosService,
@@ -54,7 +50,7 @@ import { MaterialesProveedoresService } from './materiales-proveedores/materiale
     MaterialesService,
     ProveedoresService,
     AsignacionesMaterialesService,
-    MaterialesProveedoresService // Nuevo servicio
+    MaterialesProveedoresService, // Nuevo servicio
   ],
   exports: [
     ProyectosService,
@@ -64,7 +60,7 @@ import { MaterialesProveedoresService } from './materiales-proveedores/materiale
     MaterialesService,
     ProveedoresService,
     AsignacionesMaterialesService,
-    MaterialesProveedoresService // Exportar nuevo servicio
-  ]
+    MaterialesProveedoresService, // Exportar nuevo servicio
+  ],
 })
 export class ProyectosModule {}

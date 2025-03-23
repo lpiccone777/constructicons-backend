@@ -1,22 +1,27 @@
 // src/permisos/permisos.controller.ts
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Put, 
-  Delete, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
   UseGuards,
   Request,
   ParseIntPipe,
-  Query
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermisosService } from './permisos.service';
 import { CreatePermisoDto } from './dto/create-permiso.dto';
 import { UpdatePermisoDto } from './dto/update-permiso.dto';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
@@ -31,12 +36,16 @@ export class PermisosController {
   @RequirePermissions('permisos.leer')
   @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Obtener todos los permisos' })
-  @ApiQuery({ name: 'modulo', required: false, description: 'Filtrar por módulo' })
+  @ApiQuery({
+    name: 'modulo',
+    required: false,
+    description: 'Filtrar por módulo',
+  })
   async findAll(@Query('modulo') modulo: string) {
     if (modulo) {
       return this.permisosService.findByModulo(modulo);
     }
-    
+
     return this.permisosService.findAll();
   }
 
@@ -44,7 +53,10 @@ export class PermisosController {
   @RequirePermissions('permisos.crear')
   @UseGuards(PermissionsGuard)
   @ApiOperation({ summary: 'Crear un nuevo permiso' })
-  async create(@Body() createPermisoDto: CreatePermisoDto, @Request() req: any) {
+  async create(
+    @Body() createPermisoDto: CreatePermisoDto,
+    @Request() req: any,
+  ) {
     return this.permisosService.create(createPermisoDto, req.user.id);
   }
 
@@ -55,7 +67,7 @@ export class PermisosController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePermisoDto: UpdatePermisoDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     return this.permisosService.update(id, updatePermisoDto, req.user.id);
   }

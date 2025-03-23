@@ -13,15 +13,15 @@ export class NotasService {
 
   async findAll(proyectoId?: number, usuarioId?: number) {
     const where: any = {};
-    
+
     if (proyectoId !== undefined) {
       where.proyectoId = proyectoId;
     }
-    
+
     if (usuarioId !== undefined) {
       where.usuarioId = usuarioId;
     }
-    
+
     return this.prisma.notaProyecto.findMany({
       where,
       include: {
@@ -29,21 +29,18 @@ export class NotasService {
           select: {
             id: true,
             codigo: true,
-            nombre: true
-          }
+            nombre: true,
+          },
         },
         usuario: {
           select: {
             id: true,
             nombre: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
-      orderBy: [
-        { proyectoId: 'asc' },
-        { fechaCreacion: 'desc' }
-      ]
+      orderBy: [{ proyectoId: 'asc' }, { fechaCreacion: 'desc' }],
     });
   }
 
@@ -56,17 +53,17 @@ export class NotasService {
             id: true,
             codigo: true,
             nombre: true,
-            estado: true
-          }
+            estado: true,
+          },
         },
         usuario: {
           select: {
             id: true,
             nombre: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     if (!nota) {
@@ -79,19 +76,21 @@ export class NotasService {
   async create(createDto: CreateNotaDto, usuarioId: number) {
     // Verificar si el proyecto existe
     const proyecto = await this.prisma.proyecto.findUnique({
-      where: { id: createDto.proyectoId }
+      where: { id: createDto.proyectoId },
     });
 
     if (!proyecto) {
-      throw new NotFoundException(`Proyecto con ID ${createDto.proyectoId} no encontrado`);
+      throw new NotFoundException(
+        `Proyecto con ID ${createDto.proyectoId} no encontrado`,
+      );
     }
 
     // Crear la nota
     const nuevaNota = await this.prisma.notaProyecto.create({
       data: {
         ...createDto,
-        usuarioId
-      }
+        usuarioId,
+      },
     });
 
     // Registrar en auditoría
@@ -102,8 +101,8 @@ export class NotasService {
       nuevaNota.id.toString(),
       {
         proyectoId: nuevaNota.proyectoId,
-        esPrivada: nuevaNota.esPrivada
-      }
+        esPrivada: nuevaNota.esPrivada,
+      },
     );
 
     return nuevaNota;
@@ -112,7 +111,7 @@ export class NotasService {
   async update(id: number, updateDto: UpdateNotaDto, usuarioId: number) {
     // Verificar si la nota existe
     const nota = await this.prisma.notaProyecto.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!nota) {
@@ -121,13 +120,15 @@ export class NotasService {
 
     // Verificar si el usuario es el creador de la nota
     if (nota.usuarioId !== usuarioId) {
-      throw new NotFoundException(`Solo el creador de la nota puede modificarla`);
+      throw new NotFoundException(
+        `Solo el creador de la nota puede modificarla`,
+      );
     }
 
     // Actualizar la nota
     const notaActualizada = await this.prisma.notaProyecto.update({
       where: { id },
-      data: updateDto
+      data: updateDto,
     });
 
     // Registrar en auditoría
@@ -136,7 +137,7 @@ export class NotasService {
       'actualización',
       'NotaProyecto',
       id.toString(),
-      { cambios: updateDto }
+      { cambios: updateDto },
     );
 
     return notaActualizada;
@@ -145,7 +146,7 @@ export class NotasService {
   async delete(id: number, usuarioId: number) {
     // Verificar si la nota existe
     const nota = await this.prisma.notaProyecto.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!nota) {
@@ -154,12 +155,14 @@ export class NotasService {
 
     // Verificar si el usuario es el creador de la nota
     if (nota.usuarioId !== usuarioId) {
-      throw new NotFoundException(`Solo el creador de la nota puede eliminarla`);
+      throw new NotFoundException(
+        `Solo el creador de la nota puede eliminarla`,
+      );
     }
 
     // Eliminar la nota
     await this.prisma.notaProyecto.delete({
-      where: { id }
+      where: { id },
     });
 
     // Registrar en auditoría
@@ -169,8 +172,8 @@ export class NotasService {
       'NotaProyecto',
       id.toString(),
       {
-        proyectoId: nota.proyectoId
-      }
+        proyectoId: nota.proyectoId,
+      },
     );
   }
 }

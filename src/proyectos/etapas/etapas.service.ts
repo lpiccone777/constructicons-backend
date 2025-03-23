@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { CreateEtapaDto } from './dto/create-etapa.dto';
@@ -14,11 +18,11 @@ export class EtapasService {
 
   async findAll(proyectoId?: number) {
     const where: Record<string, any> = {};
-    
+
     if (proyectoId) {
       where.proyectoId = proyectoId;
     }
-    
+
     return this.prisma.etapaProyecto.findMany({
       where,
       include: {
@@ -26,17 +30,14 @@ export class EtapasService {
           select: {
             id: true,
             codigo: true,
-            nombre: true
-          }
+            nombre: true,
+          },
         },
         _count: {
-          select: { tareas: true }
-        }
+          select: { tareas: true },
+        },
       },
-      orderBy: [
-        { proyectoId: 'asc' },
-        { orden: 'asc' }
-      ]
+      orderBy: [{ proyectoId: 'asc' }, { orden: 'asc' }],
     });
   }
 
@@ -49,8 +50,8 @@ export class EtapasService {
             id: true,
             codigo: true,
             nombre: true,
-            estado: true
-          }
+            estado: true,
+          },
         },
         tareas: {
           include: {
@@ -60,16 +61,16 @@ export class EtapasService {
                   select: {
                     id: true,
                     nombre: true,
-                    email: true
-                  }
-                }
+                    email: true,
+                  },
+                },
               },
-              where: { activo: true }
-            }
+              where: { activo: true },
+            },
           },
-          orderBy: { orden: 'asc' }
-        }
-      }
+          orderBy: { orden: 'asc' },
+        },
+      },
     });
 
     if (!etapa) {
@@ -82,36 +83,44 @@ export class EtapasService {
   async create(createEtapaDto: CreateEtapaDto, usuarioId: number) {
     // Verificar si el proyecto existe
     const proyecto = await this.prisma.proyecto.findUnique({
-      where: { id: createEtapaDto.proyectoId }
+      where: { id: createEtapaDto.proyectoId },
     });
 
     if (!proyecto) {
-      throw new NotFoundException(`Proyecto con ID ${createEtapaDto.proyectoId} no encontrado`);
+      throw new NotFoundException(
+        `Proyecto con ID ${createEtapaDto.proyectoId} no encontrado`,
+      );
     }
 
     // Verificar si ya existe una etapa con el mismo orden en este proyecto
     const existingEtapa = await this.prisma.etapaProyecto.findFirst({
       where: {
         proyectoId: createEtapaDto.proyectoId,
-        orden: createEtapaDto.orden
-      }
+        orden: createEtapaDto.orden,
+      },
     });
 
     if (existingEtapa) {
-      throw new ConflictException(`Ya existe una etapa con el orden ${createEtapaDto.orden} en este proyecto`);
+      throw new ConflictException(
+        `Ya existe una etapa con el orden ${createEtapaDto.orden} en este proyecto`,
+      );
     }
 
     // Convertir datos de string a tipos apropiados
     const etapaData = {
       ...createEtapaDto,
       presupuesto: new Decimal(createEtapaDto.presupuesto),
-      fechaInicio: createEtapaDto.fechaInicio ? new Date(createEtapaDto.fechaInicio) : null,
-      fechaFinEstimada: createEtapaDto.fechaFinEstimada ? new Date(createEtapaDto.fechaFinEstimada) : null,
+      fechaInicio: createEtapaDto.fechaInicio
+        ? new Date(createEtapaDto.fechaInicio)
+        : null,
+      fechaFinEstimada: createEtapaDto.fechaFinEstimada
+        ? new Date(createEtapaDto.fechaFinEstimada)
+        : null,
     };
 
     // Crear la etapa
     const nuevaEtapa = await this.prisma.etapaProyecto.create({
-      data: etapaData
+      data: etapaData,
     });
 
     // Registrar en auditoría
@@ -124,8 +133,8 @@ export class EtapasService {
         nombre: nuevaEtapa.nombre,
         proyectoId: nuevaEtapa.proyectoId,
         orden: nuevaEtapa.orden,
-        presupuesto: nuevaEtapa.presupuesto.toString()
-      }
+        presupuesto: nuevaEtapa.presupuesto.toString(),
+      },
     );
 
     return nuevaEtapa;
@@ -134,7 +143,7 @@ export class EtapasService {
   async update(id: number, updateEtapaDto: UpdateEtapaDto, usuarioId: number) {
     // Verificar si la etapa existe
     const etapa = await this.prisma.etapaProyecto.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!etapa) {
@@ -147,51 +156,56 @@ export class EtapasService {
         where: {
           proyectoId: etapa.proyectoId,
           orden: updateEtapaDto.orden,
-          id: { not: id }  // Excluir la etapa actual
-        }
+          id: { not: id }, // Excluir la etapa actual
+        },
       });
 
       if (existingEtapa) {
-        throw new ConflictException(`Ya existe una etapa con el orden ${updateEtapaDto.orden} en este proyecto`);
+        throw new ConflictException(
+          `Ya existe una etapa con el orden ${updateEtapaDto.orden} en este proyecto`,
+        );
       }
     }
 
     // Preparar datos para actualización
     const updateData: any = { ...updateEtapaDto };
-    
+
     if (updateEtapaDto.presupuesto) {
       updateData.presupuesto = new Decimal(updateEtapaDto.presupuesto);
     }
-    
+
     if (updateEtapaDto.fechaInicio) {
       updateData.fechaInicio = new Date(updateEtapaDto.fechaInicio);
     }
-    
+
     if (updateEtapaDto.fechaFinEstimada) {
       updateData.fechaFinEstimada = new Date(updateEtapaDto.fechaFinEstimada);
     }
-    
+
     if (updateEtapaDto.fechaFinReal) {
       updateData.fechaFinReal = new Date(updateEtapaDto.fechaFinReal);
     }
 
     // Actualizar el estado del proyecto si la etapa cambia a completada
-    if (updateEtapaDto.estado === 'completada' && etapa.estado !== 'completada') {
+    if (
+      updateEtapaDto.estado === 'completada' &&
+      etapa.estado !== 'completada'
+    ) {
       // Verificar si todas las etapas del proyecto estarán completadas
       const allEtapas = await this.prisma.etapaProyecto.findMany({
-        where: { 
+        where: {
           proyectoId: etapa.proyectoId,
-          id: { not: id }  // Excluir la etapa actual
-        }
+          id: { not: id }, // Excluir la etapa actual
+        },
       });
-      
-      const allCompleted = allEtapas.every(e => e.estado === 'completada');
-      
+
+      const allCompleted = allEtapas.every((e) => e.estado === 'completada');
+
       if (allCompleted && allEtapas.length > 0) {
         // Actualizar el proyecto a "finalizado" si todas las etapas están completadas
         await this.prisma.proyecto.update({
           where: { id: etapa.proyectoId },
-          data: { estado: 'finalizado' }
+          data: { estado: 'finalizado' },
         });
       }
     }
@@ -199,7 +213,7 @@ export class EtapasService {
     // Actualizar la etapa
     const etapaActualizada = await this.prisma.etapaProyecto.update({
       where: { id },
-      data: updateData
+      data: updateData,
     });
 
     // Registrar en auditoría
@@ -208,7 +222,7 @@ export class EtapasService {
       'actualización',
       'EtapaProyecto',
       id.toString(),
-      { cambios: updateEtapaDto }
+      { cambios: updateEtapaDto },
     );
 
     return etapaActualizada;
@@ -219,8 +233,8 @@ export class EtapasService {
     const etapa = await this.prisma.etapaProyecto.findUnique({
       where: { id },
       include: {
-        tareas: true
-      }
+        tareas: true,
+      },
     });
 
     if (!etapa) {
@@ -229,12 +243,14 @@ export class EtapasService {
 
     // Verificar si la etapa tiene tareas asociadas
     if (etapa.tareas.length > 0) {
-      throw new ConflictException('No se puede eliminar la etapa porque tiene tareas asociadas');
+      throw new ConflictException(
+        'No se puede eliminar la etapa porque tiene tareas asociadas',
+      );
     }
 
     // Eliminar la etapa
     await this.prisma.etapaProyecto.delete({
-      where: { id }
+      where: { id },
     });
 
     // Registrar en auditoría
@@ -246,40 +262,50 @@ export class EtapasService {
       {
         nombre: etapa.nombre,
         proyectoId: etapa.proyectoId,
-        orden: etapa.orden
-      }
+        orden: etapa.orden,
+      },
     );
   }
 
-  async reordenarEtapas(proyectoId: number, nuevosOrdenes: { id: number, orden: number }[], usuarioId: number) {
+  async reordenarEtapas(
+    proyectoId: number,
+    nuevosOrdenes: { id: number; orden: number }[],
+    usuarioId: number,
+  ) {
     // Verificar si el proyecto existe
     const proyecto = await this.prisma.proyecto.findUnique({
       where: { id: proyectoId },
       include: {
-        etapas: true
-      }
+        etapas: true,
+      },
     });
 
     if (!proyecto) {
-      throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado`);
+      throw new NotFoundException(
+        `Proyecto con ID ${proyectoId} no encontrado`,
+      );
     }
 
     // Verificar que todas las etapas pertenezcan a este proyecto
-    const etapaIds = proyecto.etapas.map(e => e.id);
-    const idsInvalidos = nuevosOrdenes.filter(no => !etapaIds.includes(no.id));
+    const etapaIds = proyecto.etapas.map((e) => e.id);
+    const idsInvalidos = nuevosOrdenes.filter(
+      (no) => !etapaIds.includes(no.id),
+    );
 
     if (idsInvalidos.length > 0) {
-      throw new ConflictException(`Las siguientes etapas no pertenecen a este proyecto: ${idsInvalidos.map(i => i.id).join(', ')}`);
+      throw new ConflictException(
+        `Las siguientes etapas no pertenecen a este proyecto: ${idsInvalidos.map((i) => i.id).join(', ')}`,
+      );
     }
 
     // Usar una transacción para actualizar todos los órdenes
     await this.prisma.$transaction(
-      nuevosOrdenes.map(no => 
+      nuevosOrdenes.map((no) =>
         this.prisma.etapaProyecto.update({
           where: { id: no.id },
-          data: { orden: no.orden }
-        })
-      )
+          data: { orden: no.orden },
+        }),
+      ),
     );
 
     // Registrar en auditoría
@@ -288,7 +314,7 @@ export class EtapasService {
       'actualización',
       'EtapaProyecto',
       'multiple',
-      { accion: 'reordenamiento', proyectoId, etapas: nuevosOrdenes }
+      { accion: 'reordenamiento', proyectoId, etapas: nuevosOrdenes },
     );
 
     return await this.findAll(proyectoId);

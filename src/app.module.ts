@@ -9,6 +9,9 @@ import { RolesModule } from './roles/roles.module';
 import { PermisosModule } from './permisos/permisos.module';
 import { ProyectosModule } from './proyectos/proyectos.module';
 import { CommonModule } from './common/common.module';
+import { EmpleadosModule } from './empleados/empleados.module';
+import { EspecialidadesModule } from './especialidades/especialidades.module';
+import { EmpleadosEspecialidadesModule } from './empleados-especialidades/empleados-especialidades.module';
 
 @Module({
   imports: [
@@ -21,6 +24,9 @@ import { CommonModule } from './common/common.module';
     AuthModule,
     UsersModule,
     ProyectosModule,
+    EmpleadosModule,
+    EspecialidadesModule,
+    EmpleadosEspecialidadesModule,
   ],
 })
 export class AppModule {}
