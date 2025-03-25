@@ -95,6 +95,8 @@ model EtapaProyecto {
   fechaCreacion     DateTime          @default(now())
   fechaActualizacion DateTime         @updatedAt
   tareas            TareaProyecto[]
+  asignacionesEspecialidad AsignacionEspecialidadEtapa[]
+
 }
 
 // Modelo para tareas de etapas
@@ -417,4 +419,23 @@ model AsignacionEmpleadoTarea {
   @@unique([empleadoId, tareaId, fechaAsignacion])
   @@index([empleadoId])
   @@index([tareaId])
+}
+// Modelo para asignación de especialidades a etapas
+model AsignacionEspecialidadEtapa {
+  id                Int                @id @default(autoincrement())
+  etapaId           Int
+  etapa             EtapaProyecto      @relation(fields: [etapaId], references: [id])
+  especialidadId    Int
+  especialidad      Especialidad       @relation(fields: [especialidadId], references: [id])
+  cantidadRecursos  Int
+  horasEstimadas    Decimal            @db.Decimal(8, 2)
+  valorHora         Decimal            @db.Decimal(12, 2)
+  costoTotal        Decimal            @db.Decimal(12, 2) 
+  observaciones     String?
+  fechaCreacion     DateTime           @default(now())
+  fechaActualizacion DateTime          @updatedAt
+
+  @@unique([etapaId, especialidadId])
+  @@index([etapaId])
+  @@index([especialidadId])
 }
