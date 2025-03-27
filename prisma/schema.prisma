@@ -311,6 +311,8 @@ model Especialidad {
   descripcion       String?
   valorHoraBase     Decimal               @db.Decimal(12, 2) // Tarifa base para esta especialidad
   empleados         EmpleadoEspecialidad[]
+  // Añadir la relación faltante para AsignacionEspecialidadEtapa
+  etapasAsignadas   AsignacionEspecialidadEtapa[]
   // Auditoría
   fechaCreacion     DateTime              @default(now())
   fechaActualizacion DateTime             @updatedAt
