@@ -5,6 +5,7 @@ import {
   MinLength,
   IsOptional,
   IsArray,
+  IsBoolean,
 } from 'class-validator';
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -28,4 +29,9 @@ export class RegisterDto {
   @IsOptional()
   @IsArray()
   roles?: string[];
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  esSuperUsuario?: boolean;
 }
