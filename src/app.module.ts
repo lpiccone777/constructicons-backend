@@ -12,6 +12,7 @@ import { CommonModule } from './common/common.module';
 import { EmpleadosModule } from './empleados/empleados.module';
 import { EspecialidadesModule } from './especialidades/especialidades.module';
 import { EmpleadosEspecialidadesModule } from './empleados-especialidades/empleados-especialidades.module';
+import { GremiosModule } from './gremios/gremios.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EmpleadosEspecialidadesModule } from './empleados-especialidades/emplea
     EmpleadosModule,
     EspecialidadesModule,
     EmpleadosEspecialidadesModule,
+    GremiosModule,
   ],
 })
 export class AppModule {}
