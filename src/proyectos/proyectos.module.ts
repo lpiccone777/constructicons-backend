@@ -1,5 +1,4 @@
 // src/proyectos/proyectos.module.ts
-
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
@@ -22,9 +21,14 @@ import { ProveedoresController } from './proveedores/proveedores.controller';
 import { ProveedoresService } from './proveedores/proveedores.service';
 import { AsignacionesMaterialesController } from './asignaciones-materiales/asignaciones-materiales.controller';
 import { AsignacionesMaterialesService } from './asignaciones-materiales/asignaciones-materiales.service';
-// Importar nuevos componentes
 import { MaterialesProveedoresController } from './materiales-proveedores/materiales-proveedores.controller';
 import { MaterialesProveedoresService } from './materiales-proveedores/materiales-proveedores.service';
+import { AsignacionEmpleadoTareaController } from './asignacion-empleado-tarea/asignacion-empleado-tarea.controller';
+import { AsignacionEmpleadoTareaService } from './asignacion-empleado-tarea/asignacion-empleado-tarea.service';
+import { AsignacionEspecialidadTareaController } from './asignacion-especialidad-tarea/asignacion-especialidad-tarea.controller';
+import { AsignacionEspecialidadTareaService } from './asignacion-especialidad-tarea/asignacion-especialidad-tarea.service';
+import { AsignacionEspecialidadEtapaController } from './asignacion-especialidad-etapa/asignacion-especialidad-etapa.controller';
+import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-etapa/asignacion-especialidad-etapa.service';
 
 @Module({
   imports: [PrismaModule, AuditoriaModule, PermisosModule],
@@ -38,7 +42,10 @@ import { MaterialesProveedoresService } from './materiales-proveedores/materiale
     MaterialesController,
     ProveedoresController,
     AsignacionesMaterialesController,
-    MaterialesProveedoresController, // Nuevo controlador
+    MaterialesProveedoresController,
+    AsignacionEmpleadoTareaController,
+    AsignacionEspecialidadTareaController,
+    AsignacionEspecialidadEtapaController,
   ],
   providers: [
     ProyectosService,
@@ -50,7 +57,10 @@ import { MaterialesProveedoresService } from './materiales-proveedores/materiale
     MaterialesService,
     ProveedoresService,
     AsignacionesMaterialesService,
-    MaterialesProveedoresService, // Nuevo servicio
+    MaterialesProveedoresService,
+    AsignacionEmpleadoTareaService,
+    AsignacionEspecialidadTareaService,
+    AsignacionEspecialidadEtapaService,
   ],
   exports: [
     ProyectosService,
@@ -60,7 +70,10 @@ import { MaterialesProveedoresService } from './materiales-proveedores/materiale
     MaterialesService,
     ProveedoresService,
     AsignacionesMaterialesService,
-    MaterialesProveedoresService, // Exportar nuevo servicio
+    MaterialesProveedoresService,
+    AsignacionEmpleadoTareaService,
+    AsignacionEspecialidadTareaService,
+    AsignacionEspecialidadEtapaService,
   ],
 })
 export class ProyectosModule {}

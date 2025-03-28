@@ -298,7 +298,6 @@ model Empleado {
   asignacionesTarea    AsignacionEmpleadoTarea[]
   gremioId             Int?
   gremio               Gremio?                      @relation(fields: [gremioId], references: [id])
-  disponibilidad       DisponibilidadEmpleado[]
   // Auditoría
   fechaCreacion        DateTime                     @default(now())
   fechaActualizacion   DateTime                     @updatedAt
@@ -365,24 +364,6 @@ model EmpleadoEspecialidad {
   @@unique([empleadoId, especialidadId, fechaDesde])
   @@index([empleadoId])
   @@index([especialidadId])
-}
-
-// Modelo para Disponibilidad
-model DisponibilidadEmpleado {
-  id                 Int      @id @default(autoincrement())
-  empleadoId         Int
-  empleado           Empleado @relation(fields: [empleadoId], references: [id])
-  fechaInicio        DateTime
-  fechaFin           DateTime
-  horasDiarias       Decimal  @default(8.00) @db.Decimal(4, 2)
-  estado             String // "disponible", "parcial", "no_disponible"
-  motivo             String? // Motivo de no disponibilidad
-  // Auditoría
-  fechaCreacion      DateTime @default(now())
-  fechaActualizacion DateTime @updatedAt
-
-  @@index([empleadoId])
-  @@index([fechaInicio, fechaFin])
 }
 
 // Asignación de empleados a proyectos
