@@ -1,4 +1,3 @@
-// src/proyectos/proyectos.module.ts
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
@@ -45,7 +44,7 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     MaterialesProveedoresController,
     AsignacionEmpleadoTareaController,
     AsignacionEspecialidadTareaController,
-    AsignacionEspecialidadEtapaController,
+    AsignacionEspecialidadEtapaController
   ],
   providers: [
     ProyectosService,
@@ -60,20 +59,22 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     MaterialesProveedoresService,
     AsignacionEmpleadoTareaService,
     AsignacionEspecialidadTareaService,
-    AsignacionEspecialidadEtapaService,
+    AsignacionEspecialidadEtapaService
   ],
   exports: [
     ProyectosService,
     EtapasService,
     TareasService,
     AsignacionesService,
+    DocumentosService,
+    NotasService,
     MaterialesService,
     ProveedoresService,
     AsignacionesMaterialesService,
     MaterialesProveedoresService,
     AsignacionEmpleadoTareaService,
     AsignacionEspecialidadTareaService,
-    AsignacionEspecialidadEtapaService,
-  ],
+    AsignacionEspecialidadEtapaService
+  ]
 })
 export class ProyectosModule {}

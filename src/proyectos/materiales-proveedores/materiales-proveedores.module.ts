@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { AsignacionEmpleadoTareaController } from './asignacion-empleado-tarea.controller';
-import { AsignacionEmpleadoTareaService } from './asignacion-empleado-tarea.service';
+import { MaterialesProveedoresController } from './materiales-proveedores.controller';
+import { MaterialesProveedoresService } from './materiales-proveedores.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AuditoriaModule } from '../../auditoria/auditoria.module';
 import { PermisosModule } from '../../permisos/permisos.module'; // Añadir esta importación
 
 @Module({
   imports: [PrismaModule, AuditoriaModule, PermisosModule], // Añadir PermisosModule aquí
-  controllers: [AsignacionEmpleadoTareaController],
-  providers: [AsignacionEmpleadoTareaService],
-  exports: [AsignacionEmpleadoTareaService],
+  controllers: [MaterialesProveedoresController],
+  providers: [MaterialesProveedoresService],
+  exports: [MaterialesProveedoresService],
 })
-export class AsignacionEmpleadoTareaModule {}
+export class MaterialesProveedoresModule {}

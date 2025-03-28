@@ -1,4 +1,3 @@
-// src/users/users.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
@@ -12,7 +11,7 @@ import { PermisosModule } from '../permisos/permisos.module';
     PrismaModule,
     forwardRef(() => AuthModule),
     AuditoriaModule,
-    PermisosModule,
+    PermisosModule, // Añadir PermisosModule aquí
   ],
   providers: [UsersService],
   controllers: [UsersController],
