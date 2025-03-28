@@ -59,10 +59,6 @@ export class EmpleadosService {
             especialidad: true,
           },
         },
-        disponibilidad: {
-          orderBy: { fechaInicio: 'desc' },
-          take: 5,
-        },
         asignacionesProyecto: {
           where: { activo: true },
           include: {

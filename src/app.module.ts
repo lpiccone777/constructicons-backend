@@ -13,6 +13,10 @@ import { EmpleadosModule } from './empleados/empleados.module';
 import { EspecialidadesModule } from './especialidades/especialidades.module';
 import { EmpleadosEspecialidadesModule } from './empleados-especialidades/empleados-especialidades.module';
 import { GremiosModule } from './gremios/gremios.module';
+import { GremioEspecialidadModule } from './gremio-especialidad/gremio-especialidad.module';
+import { AsignacionEmpleadoTareaModule } from './proyectos/asignacion-empleado-tarea/asignacion-empleado-tarea.module';
+import { AsignacionEspecialidadTareaModule } from './proyectos/asignacion-especialidad-tarea/asignacion-especialidad-tarea.module';
+import { AsignacionEspecialidadEtapaModule } from './proyectos/asignacion-especialidad-etapa/asignacion-especialidad-etapa.module';
 
 @Module({
   imports: [
@@ -29,6 +33,10 @@ import { GremiosModule } from './gremios/gremios.module';
     EspecialidadesModule,
     EmpleadosEspecialidadesModule,
     GremiosModule,
+    GremioEspecialidadModule,
+    AsignacionEmpleadoTareaModule,
+    AsignacionEspecialidadTareaModule,
+    AsignacionEspecialidadEtapaModule,
   ],
 })
 export class AppModule {}
