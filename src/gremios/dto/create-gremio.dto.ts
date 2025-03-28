@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsDateString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateGremioDto {
   @ApiProperty({ example: 'GRE-001', description: 'Código único del gremio' })
@@ -14,23 +14,43 @@ export class CreateGremioDto {
   @MaxLength(100)
   nombre!: string;
 
-  @ApiProperty({ example: 'Descripción del gremio', description: 'Descripción del gremio', required: false })
+  @ApiPropertyOptional({ example: 'Descripción del gremio', description: 'Descripción del gremio' })
+  @IsOptional()
   @IsString()
   @MaxLength(500)
   descripcion?: string;
 
-  @ApiProperty({ example: 'Contacto del gremio', description: 'Nombre del contacto principal', required: false })
+  @ApiPropertyOptional({ example: 'Contacto del gremio', description: 'Nombre del contacto principal' })
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   contactoNombre?: string;
 
-  @ApiProperty({ example: '+541112345678', description: 'Teléfono de contacto', required: false })
+  @ApiPropertyOptional({ example: '+541112345678', description: 'Teléfono de contacto' })
+  @IsOptional()
   @IsString()
   @MaxLength(20)
   contactoTelefono?: string;
 
-  @ApiProperty({ example: 'gremio@example.com', description: 'Email de contacto', required: false })
+  @ApiPropertyOptional({ example: 'gremio@example.com', description: 'Email de contacto' })
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   contactoEmail?: string;
+
+  // Campos adicionales enviados desde el frontend:
+  @ApiPropertyOptional({ example: 'Convenio 2025', description: 'Información sobre el convenio vigente' })
+  @IsOptional()
+  @IsString()
+  convenioVigente?: string;
+
+  @ApiPropertyOptional({ example: '2025-03-27', description: 'Fecha de convenio' })
+  @IsOptional()
+  @IsDateString()
+  fechaConvenio?: string;
+
+  @ApiPropertyOptional({ example: 'Observaciones adicionales', description: 'Observaciones adicionales' })
+  @IsOptional()
+  @IsString()
+  observaciones?: string;
 }

@@ -19,7 +19,18 @@ export class GremiosService {
       throw new ConflictException(`Ya existe un gremio con el código ${createDto.codigo}`);
     }
     const gremio = await this.prisma.gremio.create({
-      data: createDto,
+      data: {
+        codigo: createDto.codigo,
+        nombre: createDto.nombre,
+        descripcion: createDto.descripcion,
+        contactoNombre: createDto.contactoNombre,
+        contactoTelefono: createDto.contactoTelefono,
+        contactoEmail: createDto.contactoEmail,
+        convenioVigente: createDto.convenioVigente,
+        // Se transforma el string de fecha a un objeto Date, o se asigna null si no se envía
+        fechaConvenio: createDto.fechaConvenio ? new Date(createDto.fechaConvenio) : null,
+        observaciones: createDto.observaciones,
+      },
     });
     await this.auditoriaService.registrarAccion(
       usuarioId,
@@ -30,6 +41,7 @@ export class GremiosService {
     );
     return gremio;
   }
+  
 
   async findAll() {
     return this.prisma.gremio.findMany({

@@ -16,9 +16,16 @@ export class AsignacionEspecialidadTareaService {
       ? createDto.costoTotal
       : createDto.cantidad * createDto.horasEstimadas * createDto.valorHora;
     const data = {
-      ...createDto,
+      tareaId: createDto.tareaId,
+      especialidadId: createDto.especialidadId,
+      // Mapear "cantidad" al campo "cantidadRecursos" del modelo
+      cantidadRecursos: createDto.cantidad,
+      horasEstimadas: createDto.horasEstimadas,
+      valorHora: createDto.valorHora,
       costoTotal: costoTotalCalc,
+      observaciones: createDto.observaciones,
     };
+
     const asignacion = await this.prisma.asignacionEspecialidadTarea.create({
       data,
     });
@@ -49,21 +56,26 @@ export class AsignacionEspecialidadTareaService {
   }
 
   async update(id: number, updateDto: UpdateAsignacionEspecialidadTareaDto, usuarioId: number) {
-    await this.findOne(id);
+    const asignacion = await this.findOne(id);
     if (
       updateDto.cantidad !== undefined ||
       updateDto.horasEstimadas !== undefined ||
       updateDto.valorHora !== undefined
     ) {
-      const asignacion = await this.findOne(id);
-      const cantidad = updateDto.cantidad !== undefined ? updateDto.cantidad : asignacion.cantidad;
+      const cantidadRecursos = updateDto.cantidad !== undefined ? updateDto.cantidad : asignacion.cantidadRecursos;
       const horasEstimadas = updateDto.horasEstimadas !== undefined ? updateDto.horasEstimadas : asignacion.horasEstimadas;
       const valorHora = updateDto.valorHora !== undefined ? updateDto.valorHora : asignacion.valorHora;
-      updateDto.costoTotal = Number(cantidad) * Number(horasEstimadas) * Number(valorHora);
+      updateDto.costoTotal = Number(cantidadRecursos) * Number(horasEstimadas) * Number(valorHora);
+    }
+    // Construir la data y mapear "cantidad" a "cantidadRecursos" si se envía
+    const data: any = { ...updateDto };
+    if (updateDto.cantidad !== undefined) {
+      data.cantidadRecursos = updateDto.cantidad;
+      delete data.cantidad;
     }
     const updated = await this.prisma.asignacionEspecialidadTarea.update({
       where: { id },
-      data: updateDto,
+      data,
     });
     await this.auditoriaService.registrarAccion(
       usuarioId,

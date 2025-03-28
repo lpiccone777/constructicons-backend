@@ -11,7 +11,6 @@ export class GremioEspecialidadService {
   ) {}
 
   async create(createDto: CreateGremioEspecialidadDto, usuarioId: number) {
-    // Verificar que no exista ya la asociación
     const existente = await this.prisma.gremioEspecialidad.findUnique({
       where: {
         gremioId_especialidadId: {
