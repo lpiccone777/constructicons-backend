@@ -17,6 +17,7 @@ import { GremioEspecialidadModule } from './gremio-especialidad/gremio-especiali
 import { AsignacionEmpleadoTareaModule } from './proyectos/asignacion-empleado-tarea/asignacion-empleado-tarea.module';
 import { AsignacionEspecialidadTareaModule } from './proyectos/asignacion-especialidad-tarea/asignacion-especialidad-tarea.module';
 import { AsignacionEspecialidadEtapaModule } from './proyectos/asignacion-especialidad-etapa/asignacion-especialidad-etapa.module';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AsignacionEspecialidadEtapaModule } from './proyectos/asignacion-especi
     AsignacionEmpleadoTareaModule,
     AsignacionEspecialidadTareaModule,
     AsignacionEspecialidadEtapaModule,
+    ReportesModule,
   ],
 })
 export class AppModule {}
