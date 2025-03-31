@@ -42,7 +42,7 @@ export class ProyectosService {
           },
           _count: {
             select: {
-              asignaciones: true,
+              asignacionesEmpleados: true,
               documentos: true,
             },
           },
@@ -67,10 +67,10 @@ export class ProyectosService {
             },
             orderBy: { orden: 'asc' },
           },
-          asignaciones: {
+          asignacionesEmpleados: {
             where: { activo: true },
             include: {
-              usuario: {
+              empleado: {
                 select: {
                   id: true,
                   nombre: true,
@@ -266,7 +266,7 @@ export class ProyectosService {
         where: { id },
         include: {
           etapas: true,
-          asignaciones: true,
+          asignacionesEmpleados: true,
           documentos: true,
           notas: true,
         },
@@ -284,7 +284,7 @@ export class ProyectosService {
       // Usar una transacción para eliminar todas las entidades relacionadas
       await this.prisma.$transaction(async (prisma) => {
         // Eliminar asignaciones
-        if (proyecto.asignaciones.length > 0) {
+        if (proyecto.asignacionesEmpleados.length > 0) {
           await prisma.asignacionProyecto.deleteMany({
             where: { proyectoId: id },
           });
