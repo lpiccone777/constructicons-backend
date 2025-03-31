@@ -53,10 +53,10 @@ export class TareasService {
               },
             },
           },
-          asignado: {
+          asignacionesEmpleados: {
             where: { activo: true },
             include: {
-              usuario: {
+              empleado: {
                 select: {
                   id: true,
                   nombre: true,
@@ -97,9 +97,9 @@ export class TareasService {
               },
             },
           },
-          asignado: {
+          asignacionesEmpleados: {
             include: {
-              usuario: {
+              empleado: {
                 select: {
                   id: true,
                   nombre: true,
@@ -371,7 +371,7 @@ export class TareasService {
       const tarea = await this.prisma.tareaProyecto.findUnique({
         where: { id },
         include: {
-          asignado: true,
+          asignacionesEmpleados: true,
           etapa: {
             include: {
               proyecto: true,
@@ -395,7 +395,7 @@ export class TareasService {
       // Usar una transacción para eliminar la tarea y sus asignaciones
       await this.prisma.$transaction(async (prisma) => {
         // Eliminar asignaciones de la tarea
-        if (tarea.asignado.length > 0) {
+        if (tarea.asignacionesEmpleados.length > 0) {
           await prisma.asignacionTarea.deleteMany({
             where: { tareaId: id },
           });
