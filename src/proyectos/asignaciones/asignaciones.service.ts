@@ -1,14 +1,23 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+// src/proyectos/asignaciones/asignaciones.service.ts
+
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { CreateAsignacionProyectoDto } from './dto/create-asignacion-proyecto.dto';
 import { UpdateAsignacionProyectoDto } from './dto/update-asignacion-proyecto.dto';
 import { CreateAsignacionTareaDto } from './dto/create-asignacion-tarea.dto';
 import { UpdateAsignacionTareaDto } from './dto/update-asignacion-tarea.dto';
+import {
+  ProyectoNotFoundException,
+  ProyectoClosedException,
+  TareaNotFoundException,
+  AsignacionProyectoNotFoundException,
+  AsignacionProyectoConflictException,
+  AsignacionTareaNotFoundException,
+  AsignacionTareaConflictException,
+} from '../exceptions';
+import { UsuarioNotFoundException } from '../../usuarios/exceptions';
+import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
 
 @Injectable()
 export class AsignacionesService {
@@ -24,135 +33,195 @@ export class AsignacionesService {
     usuarioId?: number,
     activo?: boolean,
   ) {
-    const where: any = {};
+    try {
+      const where: any = {};
 
-    if (proyectoId !== undefined) {
-      where.proyectoId = proyectoId;
-    }
+      if (proyectoId !== undefined) {
+        where.proyectoId = proyectoId;
 
-    if (usuarioId !== undefined) {
-      where.usuarioId = usuarioId;
-    }
+        // Verificar que el proyecto existe si se especifica proyectoId
+        const proyecto = await this.prisma.proyecto.findUnique({
+          where: { id: proyectoId },
+        });
 
-    if (activo !== undefined) {
-      where.activo = activo;
-    }
+        if (!proyecto) {
+          throw new ProyectoNotFoundException(proyectoId);
+        }
+      }
 
-    return this.prisma.asignacionProyecto.findMany({
-      where,
-      include: {
-        proyecto: {
-          select: {
-            id: true,
-            codigo: true,
-            nombre: true,
-            estado: true,
+      if (usuarioId !== undefined) {
+        where.usuarioId = usuarioId;
+
+        // Verificar que el usuario existe si se especifica usuarioId
+        const usuario = await this.prisma.usuario.findUnique({
+          where: { id: usuarioId },
+        });
+
+        if (!usuario) {
+          throw new UsuarioNotFoundException(usuarioId);
+        }
+      }
+
+      if (activo !== undefined) {
+        where.activo = activo;
+      }
+
+      return this.prisma.asignacionProyecto.findMany({
+        where,
+        include: {
+          proyecto: {
+            select: {
+              id: true,
+              codigo: true,
+              nombre: true,
+              estado: true,
+            },
+          },
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+            },
           },
         },
-        usuario: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: [{ proyectoId: 'asc' }, { fechaAsignacion: 'desc' }],
-    });
+        orderBy: [{ proyectoId: 'asc' }, { fechaAsignacion: 'desc' }],
+      });
+    } catch (error) {
+      if (
+        !(error instanceof ProyectoNotFoundException) &&
+        !(error instanceof UsuarioNotFoundException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionProyecto', 'consultar', {
+          proyectoId,
+          usuarioId,
+          activo,
+        });
+      }
+      throw error;
+    }
   }
 
   async findProyectoAsignacionById(id: number) {
-    const asignacion = await this.prisma.asignacionProyecto.findUnique({
-      where: { id },
-      include: {
-        proyecto: {
-          select: {
-            id: true,
-            codigo: true,
-            nombre: true,
-            estado: true,
+    try {
+      const asignacion = await this.prisma.asignacionProyecto.findUnique({
+        where: { id },
+        include: {
+          proyecto: {
+            select: {
+              id: true,
+              codigo: true,
+              nombre: true,
+              estado: true,
+            },
+          },
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+            },
           },
         },
-        usuario: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-          },
-        },
-      },
-    });
+      });
 
-    if (!asignacion) {
-      throw new NotFoundException(
-        `Asignación de proyecto con ID ${id} no encontrada`,
-      );
+      if (!asignacion) {
+        throw new AsignacionProyectoNotFoundException(id);
+      }
+
+      return asignacion;
+    } catch (error) {
+      if (!(error instanceof AsignacionProyectoNotFoundException)) {
+        throw PrismaErrorMapper.map(error, 'asignacionProyecto', 'consultar', {
+          id,
+        });
+      }
+      throw error;
     }
-
-    return asignacion;
   }
-
   async createProyectoAsignacion(
     createDto: CreateAsignacionProyectoDto,
     usuarioCreadorId: number,
   ) {
-    // Verificar si el proyecto existe
-    const proyecto = await this.prisma.proyecto.findUnique({
-      where: { id: createDto.proyectoId },
-    });
+    try {
+      // Verificar si el proyecto existe
+      const proyecto = await this.prisma.proyecto.findUnique({
+        where: { id: createDto.proyectoId },
+      });
 
-    if (!proyecto) {
-      throw new NotFoundException(
-        `Proyecto con ID ${createDto.proyectoId} no encontrado`,
+      if (!proyecto) {
+        throw new ProyectoNotFoundException(createDto.proyectoId);
+      }
+
+      // Verificar si el proyecto está en un estado que permite asignar
+      if (['finalizado', 'cancelado'].includes(proyecto.estado)) {
+        throw new ProyectoClosedException(
+          createDto.proyectoId,
+          proyecto.estado,
+        );
+      }
+
+      // Verificar si el usuario existe
+      const usuario = await this.prisma.usuario.findUnique({
+        where: { id: createDto.usuarioId },
+      });
+
+      if (!usuario) {
+        throw new UsuarioNotFoundException(createDto.usuarioId);
+      }
+
+      // Verificar si ya existe una asignación activa para este usuario, proyecto y rol
+      const existingAsignacion = await this.prisma.asignacionProyecto.findFirst(
+        {
+          where: {
+            proyectoId: createDto.proyectoId,
+            usuarioId: createDto.usuarioId,
+            rol: createDto.rol,
+            activo: true,
+          },
+        },
       );
-    }
 
-    // Verificar si el usuario existe
-    const usuario = await this.prisma.usuario.findUnique({
-      where: { id: createDto.usuarioId },
-    });
+      if (existingAsignacion) {
+        throw new AsignacionProyectoConflictException(
+          existingAsignacion.id,
+          'rol',
+          createDto.rol,
+        );
+      }
 
-    if (!usuario) {
-      throw new NotFoundException(
-        `Usuario con ID ${createDto.usuarioId} no encontrado`,
+      // Crear la asignación
+      const nuevaAsignacion = await this.prisma.asignacionProyecto.create({
+        data: createDto,
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioCreadorId,
+        'inserción',
+        'AsignacionProyecto',
+        nuevaAsignacion.id.toString(),
+        {
+          proyectoId: nuevaAsignacion.proyectoId,
+          usuarioId: nuevaAsignacion.usuarioId,
+          rol: nuevaAsignacion.rol,
+        },
       );
+
+      return nuevaAsignacion;
+    } catch (error) {
+      if (
+        !(error instanceof ProyectoNotFoundException) &&
+        !(error instanceof ProyectoClosedException) &&
+        !(error instanceof UsuarioNotFoundException) &&
+        !(error instanceof AsignacionProyectoConflictException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionProyecto', 'crear', {
+          dto: createDto,
+        });
+      }
+      throw error;
     }
-
-    // Verificar si ya existe una asignación activa para este usuario, proyecto y rol
-    const existingAsignacion = await this.prisma.asignacionProyecto.findFirst({
-      where: {
-        proyectoId: createDto.proyectoId,
-        usuarioId: createDto.usuarioId,
-        rol: createDto.rol,
-        activo: true,
-      },
-    });
-
-    if (existingAsignacion) {
-      throw new ConflictException(
-        `Ya existe una asignación activa para este usuario con el rol ${createDto.rol} en este proyecto`,
-      );
-    }
-
-    // Crear la asignación
-    const nuevaAsignacion = await this.prisma.asignacionProyecto.create({
-      data: createDto,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioCreadorId,
-      'inserción',
-      'AsignacionProyecto',
-      nuevaAsignacion.id.toString(),
-      {
-        proyectoId: nuevaAsignacion.proyectoId,
-        usuarioId: nuevaAsignacion.usuarioId,
-        rol: nuevaAsignacion.rol,
-      },
-    );
-
-    return nuevaAsignacion;
   }
 
   async updateProyectoAsignacion(
@@ -160,97 +229,143 @@ export class AsignacionesService {
     updateDto: UpdateAsignacionProyectoDto,
     usuarioModificadorId: number,
   ) {
-    // Verificar si la asignación existe
-    const asignacion = await this.prisma.asignacionProyecto.findUnique({
-      where: { id },
-    });
+    try {
+      // Verificar si la asignación existe
+      const asignacion = await this.prisma.asignacionProyecto.findUnique({
+        where: { id },
+        include: {
+          proyecto: true,
+        },
+      });
 
-    if (!asignacion) {
-      throw new NotFoundException(
-        `Asignación de proyecto con ID ${id} no encontrada`,
-      );
-    }
+      if (!asignacion) {
+        throw new AsignacionProyectoNotFoundException(id);
+      }
 
-    // Verificar si se está cambiando el rol y si ya existe una asignación para ese rol
-    if (updateDto.rol && updateDto.rol !== asignacion.rol) {
-      const existingAsignacion = await this.prisma.asignacionProyecto.findFirst(
+      // Verificar si el proyecto está en un estado que permite modificar
+      if (['finalizado', 'cancelado'].includes(asignacion.proyecto.estado)) {
+        throw new ProyectoClosedException(
+          asignacion.proyectoId,
+          asignacion.proyecto.estado,
+        );
+      }
+
+      // Verificar si se está cambiando el rol y si ya existe una asignación para ese rol
+      if (updateDto.rol && updateDto.rol !== asignacion.rol) {
+        const existingAsignacion =
+          await this.prisma.asignacionProyecto.findFirst({
+            where: {
+              proyectoId: asignacion.proyectoId,
+              usuarioId: asignacion.usuarioId,
+              rol: updateDto.rol,
+              activo: true,
+              id: { not: id }, // Excluir la asignación actual
+            },
+          });
+
+        if (existingAsignacion) {
+          throw new AsignacionProyectoConflictException(
+            existingAsignacion.id,
+            'rol',
+            updateDto.rol,
+          );
+        }
+      }
+
+      // Preparar datos para actualización
+      const updateData: any = { ...updateDto };
+
+      if (updateDto.fechaDesasignacion) {
+        updateData.fechaDesasignacion = new Date(updateDto.fechaDesasignacion);
+
+        // Si se establece fecha de desasignación, automáticamente actualizar activo a false
+        if (!updateDto.hasOwnProperty('activo')) {
+          updateData.activo = false;
+        }
+      }
+
+      // Actualizar la asignación
+      const asignacionActualizada = await this.prisma.asignacionProyecto.update(
         {
-          where: {
-            proyectoId: asignacion.proyectoId,
-            usuarioId: asignacion.usuarioId,
-            rol: updateDto.rol,
-            activo: true,
-            id: { not: id }, // Excluir la asignación actual
-          },
+          where: { id },
+          data: updateData,
         },
       );
 
-      if (existingAsignacion) {
-        throw new ConflictException(
-          `Ya existe una asignación activa para este usuario con el rol ${updateDto.rol} en este proyecto`,
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioModificadorId,
+        'actualización',
+        'AsignacionProyecto',
+        id.toString(),
+        { cambios: updateDto },
+      );
+
+      return asignacionActualizada;
+    } catch (error) {
+      if (
+        !(error instanceof AsignacionProyectoNotFoundException) &&
+        !(error instanceof ProyectoClosedException) &&
+        !(error instanceof AsignacionProyectoConflictException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionProyecto', 'actualizar', {
+          id,
+          dto: updateDto,
+        });
+      }
+      throw error;
+    }
+  }
+  async deleteProyectoAsignacion(id: number, usuarioEliminadorId: number) {
+    try {
+      // Verificar si la asignación existe
+      const asignacion = await this.prisma.asignacionProyecto.findUnique({
+        where: { id },
+        include: {
+          proyecto: true,
+        },
+      });
+
+      if (!asignacion) {
+        throw new AsignacionProyectoNotFoundException(id);
+      }
+
+      // Verificar si el proyecto está en un estado que permite eliminar
+      if (['finalizado', 'cancelado'].includes(asignacion.proyecto.estado)) {
+        throw new ProyectoClosedException(
+          asignacion.proyectoId,
+          asignacion.proyecto.estado,
         );
       }
-    }
 
-    // Preparar datos para actualización
-    const updateData: any = { ...updateDto };
+      // Eliminar la asignación
+      await this.prisma.asignacionProyecto.delete({
+        where: { id },
+      });
 
-    if (updateDto.fechaDesasignacion) {
-      updateData.fechaDesasignacion = new Date(updateDto.fechaDesasignacion);
-
-      // Si se establece fecha de desasignación, automáticamente actualizar activo a false
-      if (!updateDto.hasOwnProperty('activo')) {
-        updateData.activo = false;
-      }
-    }
-
-    // Actualizar la asignación
-    const asignacionActualizada = await this.prisma.asignacionProyecto.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioModificadorId,
-      'actualización',
-      'AsignacionProyecto',
-      id.toString(),
-      { cambios: updateDto },
-    );
-
-    return asignacionActualizada;
-  }
-
-  async deleteProyectoAsignacion(id: number, usuarioEliminadorId: number) {
-    // Verificar si la asignación existe
-    const asignacion = await this.prisma.asignacionProyecto.findUnique({
-      where: { id },
-    });
-
-    if (!asignacion) {
-      throw new NotFoundException(
-        `Asignación de proyecto con ID ${id} no encontrada`,
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioEliminadorId,
+        'borrado',
+        'AsignacionProyecto',
+        id.toString(),
+        {
+          proyectoId: asignacion.proyectoId,
+          usuarioId: asignacion.usuarioId,
+          rol: asignacion.rol,
+        },
       );
+    } catch (error) {
+      if (
+        !(error instanceof AsignacionProyectoNotFoundException) &&
+        !(error instanceof ProyectoClosedException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionProyecto', 'eliminar', {
+          id,
+        });
+      }
+      throw error;
     }
-
-    // Eliminar la asignación
-    await this.prisma.asignacionProyecto.delete({
-      where: { id },
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioEliminadorId,
-      'borrado',
-      'AsignacionProyecto',
-      id.toString(),
-      {
-        proyectoId: asignacion.proyectoId,
-        usuarioId: asignacion.usuarioId,
-        rol: asignacion.rol,
-      },
-    );
   }
 
   // Asignaciones de Tarea
@@ -260,174 +375,222 @@ export class AsignacionesService {
     usuarioId?: number,
     activo?: boolean,
   ) {
-    const where: any = {};
+    try {
+      const where: any = {};
 
-    if (tareaId !== undefined) {
-      where.tareaId = tareaId;
-    }
+      if (tareaId !== undefined) {
+        where.tareaId = tareaId;
 
-    if (usuarioId !== undefined) {
-      where.usuarioId = usuarioId;
-    }
+        // Verificar que la tarea existe si se especifica tareaId
+        const tarea = await this.prisma.tareaProyecto.findUnique({
+          where: { id: tareaId },
+        });
 
-    if (activo !== undefined) {
-      where.activo = activo;
-    }
+        if (!tarea) {
+          throw new TareaNotFoundException(tareaId);
+        }
+      }
 
-    return this.prisma.asignacionTarea.findMany({
-      where,
-      include: {
-        tarea: {
-          select: {
-            id: true,
-            nombre: true,
-            estado: true,
-            etapa: {
-              select: {
-                id: true,
-                nombre: true,
-                proyecto: {
-                  select: {
-                    id: true,
-                    codigo: true,
-                    nombre: true,
+      if (usuarioId !== undefined) {
+        where.usuarioId = usuarioId;
+
+        // Verificar que el usuario existe si se especifica usuarioId
+        const usuario = await this.prisma.usuario.findUnique({
+          where: { id: usuarioId },
+        });
+
+        if (!usuario) {
+          throw new UsuarioNotFoundException(usuarioId);
+        }
+      }
+
+      if (activo !== undefined) {
+        where.activo = activo;
+      }
+
+      return this.prisma.asignacionTarea.findMany({
+        where,
+        include: {
+          tarea: {
+            select: {
+              id: true,
+              nombre: true,
+              estado: true,
+              etapa: {
+                select: {
+                  id: true,
+                  nombre: true,
+                  proyecto: {
+                    select: {
+                      id: true,
+                      codigo: true,
+                      nombre: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        usuario: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: [{ tareaId: 'asc' }, { fechaAsignacion: 'desc' }],
-    });
+        orderBy: [{ tareaId: 'asc' }, { fechaAsignacion: 'desc' }],
+      });
+    } catch (error) {
+      if (
+        !(error instanceof TareaNotFoundException) &&
+        !(error instanceof UsuarioNotFoundException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionTarea', 'consultar', {
+          tareaId,
+          usuarioId,
+          activo,
+        });
+      }
+      throw error;
+    }
   }
 
   async findTareaAsignacionById(id: number) {
-    const asignacion = await this.prisma.asignacionTarea.findUnique({
-      where: { id },
-      include: {
-        tarea: {
-          select: {
-            id: true,
-            nombre: true,
-            estado: true,
-            etapa: {
-              select: {
-                id: true,
-                nombre: true,
-                proyecto: {
-                  select: {
-                    id: true,
-                    codigo: true,
-                    nombre: true,
+    try {
+      const asignacion = await this.prisma.asignacionTarea.findUnique({
+        where: { id },
+        include: {
+          tarea: {
+            select: {
+              id: true,
+              nombre: true,
+              estado: true,
+              etapa: {
+                select: {
+                  id: true,
+                  nombre: true,
+                  proyecto: {
+                    select: {
+                      id: true,
+                      codigo: true,
+                      nombre: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        usuario: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!asignacion) {
-      throw new NotFoundException(
-        `Asignación de tarea con ID ${id} no encontrada`,
-      );
+      if (!asignacion) {
+        throw new AsignacionTareaNotFoundException(id);
+      }
+
+      return asignacion;
+    } catch (error) {
+      if (!(error instanceof AsignacionTareaNotFoundException)) {
+        throw PrismaErrorMapper.map(error, 'asignacionTarea', 'consultar', {
+          id,
+        });
+      }
+      throw error;
     }
-
-    return asignacion;
   }
-
   async createTareaAsignacion(
     createDto: CreateAsignacionTareaDto,
     usuarioCreadorId: number,
   ) {
-    // Verificar si la tarea existe
-    const tarea = await this.prisma.tareaProyecto.findUnique({
-      where: { id: createDto.tareaId },
-      include: {
-        etapa: {
-          include: {
-            proyecto: true,
+    try {
+      // Verificar si la tarea existe
+      const tarea = await this.prisma.tareaProyecto.findUnique({
+        where: { id: createDto.tareaId },
+        include: {
+          etapa: {
+            include: {
+              proyecto: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!tarea) {
-      throw new NotFoundException(
-        `Tarea con ID ${createDto.tareaId} no encontrada`,
+      if (!tarea) {
+        throw new TareaNotFoundException(createDto.tareaId);
+      }
+
+      // Verificar si el proyecto está en un estado que permite asignar tareas
+      if (['finalizado', 'cancelado'].includes(tarea.etapa.proyecto.estado)) {
+        throw new ProyectoClosedException(
+          tarea.etapa.proyecto.id,
+          tarea.etapa.proyecto.estado,
+        );
+      }
+
+      // Verificar si el usuario existe
+      const usuario = await this.prisma.usuario.findUnique({
+        where: { id: createDto.usuarioId },
+      });
+
+      if (!usuario) {
+        throw new UsuarioNotFoundException(createDto.usuarioId);
+      }
+
+      // Verificar si ya existe una asignación activa para este usuario y tarea
+      const existingAsignacion = await this.prisma.asignacionTarea.findFirst({
+        where: {
+          tareaId: createDto.tareaId,
+          usuarioId: createDto.usuarioId,
+          activo: true,
+        },
+      });
+
+      if (existingAsignacion) {
+        throw new AsignacionTareaConflictException(
+          existingAsignacion.id,
+          'usuario',
+          createDto.usuarioId,
+        );
+      }
+
+      // Crear la asignación
+      const nuevaAsignacion = await this.prisma.asignacionTarea.create({
+        data: createDto,
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioCreadorId,
+        'inserción',
+        'AsignacionTarea',
+        nuevaAsignacion.id.toString(),
+        {
+          tareaId: nuevaAsignacion.tareaId,
+          usuarioId: nuevaAsignacion.usuarioId,
+        },
       );
+
+      return nuevaAsignacion;
+    } catch (error) {
+      if (
+        !(error instanceof TareaNotFoundException) &&
+        !(error instanceof ProyectoClosedException) &&
+        !(error instanceof UsuarioNotFoundException) &&
+        !(error instanceof AsignacionTareaConflictException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionTarea', 'crear', {
+          dto: createDto,
+        });
+      }
+      throw error;
     }
-
-    // Verificar si el proyecto está en un estado que permite asignar tareas
-    if (
-      tarea.etapa.proyecto.estado === 'finalizado' ||
-      tarea.etapa.proyecto.estado === 'cancelado'
-    ) {
-      throw new ConflictException(
-        `No se pueden asignar tareas en un proyecto ${tarea.etapa.proyecto.estado}`,
-      );
-    }
-
-    // Verificar si el usuario existe
-    const usuario = await this.prisma.usuario.findUnique({
-      where: { id: createDto.usuarioId },
-    });
-
-    if (!usuario) {
-      throw new NotFoundException(
-        `Usuario con ID ${createDto.usuarioId} no encontrado`,
-      );
-    }
-
-    // Verificar si ya existe una asignación activa para este usuario y tarea
-    const existingAsignacion = await this.prisma.asignacionTarea.findFirst({
-      where: {
-        tareaId: createDto.tareaId,
-        usuarioId: createDto.usuarioId,
-        activo: true,
-      },
-    });
-
-    if (existingAsignacion) {
-      throw new ConflictException(
-        `Ya existe una asignación activa para este usuario en esta tarea`,
-      );
-    }
-
-    // Crear la asignación
-    const nuevaAsignacion = await this.prisma.asignacionTarea.create({
-      data: createDto,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioCreadorId,
-      'inserción',
-      'AsignacionTarea',
-      nuevaAsignacion.id.toString(),
-      {
-        tareaId: nuevaAsignacion.tareaId,
-        usuarioId: nuevaAsignacion.usuarioId,
-      },
-    );
-
-    return nuevaAsignacion;
   }
 
   async updateTareaAsignacion(
@@ -435,95 +598,141 @@ export class AsignacionesService {
     updateDto: UpdateAsignacionTareaDto,
     usuarioModificadorId: number,
   ) {
-    // Verificar si la asignación existe
-    const asignacion = await this.prisma.asignacionTarea.findUnique({
-      where: { id },
-      include: {
-        tarea: {
-          include: {
-            etapa: {
-              include: {
-                proyecto: true,
+    try {
+      // Verificar si la asignación existe
+      const asignacion = await this.prisma.asignacionTarea.findUnique({
+        where: { id },
+        include: {
+          tarea: {
+            include: {
+              etapa: {
+                include: {
+                  proyecto: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!asignacion) {
-      throw new NotFoundException(
-        `Asignación de tarea con ID ${id} no encontrada`,
-      );
-    }
-
-    // Verificar si el proyecto está en un estado que permite modificar asignaciones
-    if (
-      asignacion.tarea.etapa.proyecto.estado === 'finalizado' ||
-      asignacion.tarea.etapa.proyecto.estado === 'cancelado'
-    ) {
-      throw new ConflictException(
-        `No se pueden modificar asignaciones en un proyecto ${asignacion.tarea.etapa.proyecto.estado}`,
-      );
-    }
-
-    // Preparar datos para actualización
-    const updateData: any = { ...updateDto };
-
-    if (updateDto.fechaDesasignacion) {
-      updateData.fechaDesasignacion = new Date(updateDto.fechaDesasignacion);
-
-      // Si se establece fecha de desasignación, automáticamente actualizar activo a false
-      if (!updateDto.hasOwnProperty('activo')) {
-        updateData.activo = false;
+      if (!asignacion) {
+        throw new AsignacionTareaNotFoundException(id);
       }
+
+      // Verificar si el proyecto está en un estado que permite modificar asignaciones
+      if (
+        ['finalizado', 'cancelado'].includes(
+          asignacion.tarea.etapa.proyecto.estado,
+        )
+      ) {
+        throw new ProyectoClosedException(
+          asignacion.tarea.etapa.proyecto.id,
+          asignacion.tarea.etapa.proyecto.estado,
+        );
+      }
+
+      // Preparar datos para actualización
+      const updateData: any = { ...updateDto };
+
+      if (updateDto.fechaDesasignacion) {
+        updateData.fechaDesasignacion = new Date(updateDto.fechaDesasignacion);
+
+        // Si se establece fecha de desasignación, automáticamente actualizar activo a false
+        if (!updateDto.hasOwnProperty('activo')) {
+          updateData.activo = false;
+        }
+      }
+
+      // Actualizar la asignación
+      const asignacionActualizada = await this.prisma.asignacionTarea.update({
+        where: { id },
+        data: updateData,
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioModificadorId,
+        'actualización',
+        'AsignacionTarea',
+        id.toString(),
+        { cambios: updateDto },
+      );
+
+      return asignacionActualizada;
+    } catch (error) {
+      if (
+        !(error instanceof AsignacionTareaNotFoundException) &&
+        !(error instanceof ProyectoClosedException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionTarea', 'actualizar', {
+          id,
+          dto: updateDto,
+        });
+      }
+      throw error;
     }
-
-    // Actualizar la asignación
-    const asignacionActualizada = await this.prisma.asignacionTarea.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioModificadorId,
-      'actualización',
-      'AsignacionTarea',
-      id.toString(),
-      { cambios: updateDto },
-    );
-
-    return asignacionActualizada;
   }
 
   async deleteTareaAsignacion(id: number, usuarioEliminadorId: number) {
-    // Verificar si la asignación existe
-    const asignacion = await this.prisma.asignacionTarea.findUnique({
-      where: { id },
-    });
+    try {
+      // Verificar si la asignación existe
+      const asignacion = await this.prisma.asignacionTarea.findUnique({
+        where: { id },
+        include: {
+          tarea: {
+            include: {
+              etapa: {
+                include: {
+                  proyecto: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-    if (!asignacion) {
-      throw new NotFoundException(
-        `Asignación de tarea con ID ${id} no encontrada`,
+      if (!asignacion) {
+        throw new AsignacionTareaNotFoundException(id);
+      }
+
+      // Verificar si el proyecto está en un estado que permite eliminar asignaciones
+      if (
+        ['finalizado', 'cancelado'].includes(
+          asignacion.tarea.etapa.proyecto.estado,
+        )
+      ) {
+        throw new ProyectoClosedException(
+          asignacion.tarea.etapa.proyecto.id,
+          asignacion.tarea.etapa.proyecto.estado,
+        );
+      }
+
+      // Eliminar la asignación
+      await this.prisma.asignacionTarea.delete({
+        where: { id },
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioEliminadorId,
+        'borrado',
+        'AsignacionTarea',
+        id.toString(),
+        {
+          tareaId: asignacion.tareaId,
+          usuarioId: asignacion.usuarioId,
+        },
       );
+    } catch (error) {
+      if (
+        !(error instanceof AsignacionTareaNotFoundException) &&
+        !(error instanceof ProyectoClosedException)
+      ) {
+        throw PrismaErrorMapper.map(error, 'asignacionTarea', 'eliminar', {
+          id,
+        });
+      }
+      throw error;
     }
-
-    // Eliminar la asignación
-    await this.prisma.asignacionTarea.delete({
-      where: { id },
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioEliminadorId,
-      'borrado',
-      'AsignacionTarea',
-      id.toString(),
-      {
-        tareaId: asignacion.tareaId,
-        usuarioId: asignacion.usuarioId,
-      },
-    );
   }
 }
