@@ -81,9 +81,9 @@ export class EtapasService {
           },
           tareas: {
             include: {
-              asignado: {
+              asignacionesEmpleados: {
                 include: {
-                  usuario: {
+                  empleado: {
                     select: {
                       id: true,
                       nombre: true,

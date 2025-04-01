@@ -9,6 +9,7 @@ import {
   AvanceProyectoResponse,
   RecursosHumanosResponse,
 } from './types';
+import { AsignacionEmpleadoTareaController } from 'src/proyectos/asignacion-empleado-tarea/asignacion-empleado-tarea.controller';
 
 @Injectable()
 export class ReportesService {
@@ -413,8 +414,8 @@ export class ReportesService {
         presupuestoConsumido,
         tareas: etapa.tareas.map((tarea) => {
           // Extraer responsables
-          const responsables = tarea.asignado.map(
-            (asignacion) => asignacion.usuario.nombre,
+          const responsables = tarea.asignacionesEmpleados.map(
+            (asignacionEmpleados) => asignacionEmpleados.empleado.nombre,
           );
 
           // Extraer materiales

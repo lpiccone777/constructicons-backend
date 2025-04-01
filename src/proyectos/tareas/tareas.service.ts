@@ -396,7 +396,7 @@ export class TareasService {
       await this.prisma.$transaction(async (prisma) => {
         // Eliminar asignaciones de la tarea
         if (tarea.asignacionesEmpleados.length > 0) {
-          await prisma.asignacionTarea.deleteMany({
+          await prisma.asignacionEmpleadoTarea.deleteMany({
             where: { tareaId: id },
           });
         }
