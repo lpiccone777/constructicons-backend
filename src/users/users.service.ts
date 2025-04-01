@@ -28,10 +28,12 @@ export class UsersService {
         where: { email },
         include: { roles: { include: { permisos: true } } },
       });
-      
+
       return usuario;
     } catch (error) {
-      throw PrismaErrorMapper.map(error, 'usuario', 'consultar-por-email', { email });
+      throw PrismaErrorMapper.map(error, 'usuario', 'consultar-por-email', {
+        email,
+      });
     }
   }
 
@@ -44,11 +46,11 @@ export class UsersService {
       const usuarioExistente = await this.prisma.usuario.findUnique({
         where: { email: data.email },
       });
-      
+
       if (usuarioExistente) {
         throw new UserEmailConflictException(data.email);
       }
-      
+
       // Verificar si el email es el superusuario designado
       const esSuperUsuario =
         data.email === 'asesorpicconel@gmail.com' || data.esSuperUsuario;
@@ -120,7 +122,7 @@ export class UsersService {
         const emailExistente = await this.prisma.usuario.findUnique({
           where: { email: data.email },
         });
-        
+
         if (emailExistente) {
           throw new UserEmailConflictException(data.email);
         }
@@ -215,17 +217,14 @@ export class UsersService {
 
       // No permitir eliminar al superusuario
       if (usuario.esSuperUsuario) {
-        throw new UserPermissionException(
-          id,
-          'eliminar-superusuario',
-        );
+        throw new UserPermissionException(id, 'eliminar-superusuario');
       }
 
       // Verificar si tiene acciones de auditoría asociadas
       const accionesAuditoria = await this.prisma.auditoria.count({
         where: { usuarioId: id },
       });
-      
+
       if (accionesAuditoria > 0) {
         throw new UserDependenciesException(id, ['acciones de auditoría']);
       }
@@ -270,11 +269,11 @@ export class UsersService {
         where: { id },
         include: { roles: { include: { permisos: true } } },
       });
-      
+
       if (!usuario) {
         throw new UserNotFoundException(id);
       }
-      
+
       return usuario;
     } catch (error) {
       if (!(error instanceof UserNotFoundException)) {
@@ -291,7 +290,9 @@ export class UsersService {
         data: { ultimaActividad: new Date() },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(error, 'usuario', 'actualizar-actividad', { id });
+      throw PrismaErrorMapper.map(error, 'usuario', 'actualizar-actividad', {
+        id,
+      });
     }
   }
 

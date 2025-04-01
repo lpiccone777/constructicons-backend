@@ -13,11 +13,7 @@ import { ErrorCode } from '../../common/constants/error-codes';
  */
 export class InvalidCredentialsException extends UnauthorizedException {
   constructor() {
-    super(
-      'Credenciales inválidas',
-      'INVALID_CREDENTIALS' as ErrorCode,
-      {},
-    );
+    super('Credenciales inválidas', 'INVALID_CREDENTIALS' as ErrorCode, {});
   }
 }
 
@@ -26,11 +22,7 @@ export class InvalidCredentialsException extends UnauthorizedException {
  */
 export class TokenExpiredException extends UnauthorizedException {
   constructor() {
-    super(
-      'El token ha expirado',
-      'TOKEN_EXPIRED' as ErrorCode,
-      {},
-    );
+    super('El token ha expirado', 'TOKEN_EXPIRED' as ErrorCode, {});
   }
 }
 
@@ -39,11 +31,7 @@ export class TokenExpiredException extends UnauthorizedException {
  */
 export class InvalidTokenException extends UnauthorizedException {
   constructor() {
-    super(
-      'Token inválido',
-      'INVALID_TOKEN' as ErrorCode,
-      {},
-    );
+    super('Token inválido', 'INVALID_TOKEN' as ErrorCode, {});
   }
 }
 
@@ -52,11 +40,9 @@ export class InvalidTokenException extends UnauthorizedException {
  */
 export class InactiveUserException extends UnauthorizedException {
   constructor(email: string) {
-    super(
-      'La cuenta de usuario está inactiva',
-      'USER_INACTIVE' as ErrorCode,
-      { email },
-    );
+    super('La cuenta de usuario está inactiva', 'USER_INACTIVE' as ErrorCode, {
+      email,
+    });
   }
 }
 
@@ -65,10 +51,6 @@ export class InactiveUserException extends UnauthorizedException {
  */
 export class AuthenticationException extends BusinessException {
   constructor(message: string, details: Record<string, any> = {}) {
-    super(
-      message,
-      'AUTHENTICATION_ERROR' as ErrorCode,
-      details,
-    );
+    super(message, 'AUTHENTICATION_ERROR' as ErrorCode, details);
   }
 }

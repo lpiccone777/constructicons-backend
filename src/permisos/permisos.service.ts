@@ -33,7 +33,9 @@ export class PermisosService {
         where: { modulo },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(error, 'permiso', 'consultar-por-modulo', { modulo });
+      throw PrismaErrorMapper.map(error, 'permiso', 'consultar-por-modulo', {
+        modulo,
+      });
     }
   }
 
@@ -46,11 +48,11 @@ export class PermisosService {
           accion: data.accion,
         },
       });
-      
+
       if (existingPermiso) {
         throw new PermisoConflictException(data.modulo, data.accion);
       }
-      
+
       // Crear permiso
       const nuevoPermiso = await this.prisma.permiso.create({
         data: {
@@ -91,11 +93,13 @@ export class PermisosService {
       const permisoExistente = await this.getPermisoOrFail(id);
 
       // Verificar si se está actualizando el módulo o acción y si ya existe
-      if ((data.modulo && data.modulo !== permisoExistente.modulo) || 
-          (data.accion && data.accion !== permisoExistente.accion)) {
+      if (
+        (data.modulo && data.modulo !== permisoExistente.modulo) ||
+        (data.accion && data.accion !== permisoExistente.accion)
+      ) {
         const moduloToCheck = data.modulo || permisoExistente.modulo;
         const accionToCheck = data.accion || permisoExistente.accion;
-        
+
         const existingPermiso = await this.prisma.permiso.findFirst({
           where: {
             modulo: moduloToCheck,
@@ -103,7 +107,7 @@ export class PermisosService {
             id: { not: id }, // Excluir el permiso actual
           },
         });
-        
+
         if (existingPermiso) {
           throw new PermisoConflictException(moduloToCheck, accionToCheck);
         }

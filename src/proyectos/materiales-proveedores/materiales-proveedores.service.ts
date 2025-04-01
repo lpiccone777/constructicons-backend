@@ -7,9 +7,9 @@ import { CreateMaterialProveedorDto } from './dto/create-material-proveedor.dto'
 import { UpdateMaterialProveedorDto } from './dto/update-material-proveedor.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
-import { 
+import {
   MaterialProveedorNotFoundException,
-  MaterialProveedorConflictException
+  MaterialProveedorConflictException,
 } from './exceptions/material-proveedor.exceptions';
 import { MaterialNotFoundException } from '../materiales/exceptions/material.exceptions';
 import { ProveedorNotFoundException } from '../proveedores/exceptions/proveedor.exceptions';
@@ -60,12 +60,10 @@ export class MaterialesProveedoresService {
         orderBy: { precio: 'asc' },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(
-        error,
-        'material-proveedor',
-        'listar',
-        { materialId, proveedorId }
-      );
+      throw PrismaErrorMapper.map(error, 'material-proveedor', 'listar', {
+        materialId,
+        proveedorId,
+      });
     }
   }
 
@@ -77,12 +75,9 @@ export class MaterialesProveedoresService {
       if (error instanceof MaterialProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'material-proveedor',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'material-proveedor', 'consultar', {
+        id,
+      });
     }
   }
 
@@ -115,7 +110,10 @@ export class MaterialesProveedoresService {
       });
 
       if (existingRelacion) {
-        throw new MaterialProveedorConflictException(createDto.materialId, createDto.proveedorId);
+        throw new MaterialProveedorConflictException(
+          createDto.materialId,
+          createDto.proveedorId,
+        );
       }
 
       // Si se está marcando como proveedor principal, actualizar otros proveedores
@@ -167,12 +165,9 @@ export class MaterialesProveedoresService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'material-proveedor',
-        'crear',
-        { createDto }
-      );
+      throw PrismaErrorMapper.map(error, 'material-proveedor', 'crear', {
+        createDto,
+      });
     }
   }
 
@@ -205,20 +200,24 @@ export class MaterialesProveedoresService {
         if (!proveedor) {
           throw new ProveedorNotFoundException(updateDto.proveedorId);
         }
-        
+
         // Verificar que no exista ya esa combinación de material-proveedor
         if (updateDto.materialId || relacion.materialId) {
           const materialId = updateDto.materialId || relacion.materialId;
-          const existingRelacion = await this.prisma.materialProveedor.findFirst({
-            where: {
-              materialId,
-              proveedorId: updateDto.proveedorId,
-              id: { not: id }
-            },
-          });
+          const existingRelacion =
+            await this.prisma.materialProveedor.findFirst({
+              where: {
+                materialId,
+                proveedorId: updateDto.proveedorId,
+                id: { not: id },
+              },
+            });
 
           if (existingRelacion) {
-            throw new MaterialProveedorConflictException(materialId, updateDto.proveedorId);
+            throw new MaterialProveedorConflictException(
+              materialId,
+              updateDto.proveedorId,
+            );
           }
         }
       }
@@ -271,12 +270,10 @@ export class MaterialesProveedoresService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'material-proveedor',
-        'actualizar',
-        { id, updateDto }
-      );
+      throw PrismaErrorMapper.map(error, 'material-proveedor', 'actualizar', {
+        id,
+        updateDto,
+      });
     }
   }
 
@@ -304,18 +301,15 @@ export class MaterialesProveedoresService {
           proveedorId: relacion.proveedorId,
         },
       );
-      
+
       return { id };
     } catch (error) {
       if (error instanceof MaterialProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'material-proveedor',
-        'eliminar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'material-proveedor', 'eliminar', {
+        id,
+      });
     }
   }
 
@@ -383,12 +377,9 @@ export class MaterialesProveedoresService {
       if (error instanceof MaterialNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'material-proveedor',
-        'comparativa',
-        { materialId }
-      );
+      throw PrismaErrorMapper.map(error, 'material-proveedor', 'comparativa', {
+        materialId,
+      });
     }
   }
 
@@ -404,22 +395,19 @@ export class MaterialesProveedoresService {
           proveedor: true,
         },
       });
-      
+
       if (!relacion) {
         throw new MaterialProveedorNotFoundException(id);
       }
-      
+
       return relacion;
     } catch (error) {
       if (error instanceof MaterialProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'material-proveedor',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'material-proveedor', 'consultar', {
+        id,
+      });
     }
   }
 }

@@ -10,11 +10,9 @@ import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
 import {
   ProveedorNotFoundException,
   ProveedorConflictException,
-  ProveedorDependenciesException
+  ProveedorDependenciesException,
 } from './exceptions/proveedor.exceptions';
-import {
-  ContactoProveedorNotFoundException
-} from './exceptions/contacto-proveedor.exceptions';
+import { ContactoProveedorNotFoundException } from './exceptions/contacto-proveedor.exceptions';
 
 @Injectable()
 export class ProveedoresService {
@@ -43,12 +41,7 @@ export class ProveedoresService {
         orderBy: { nombre: 'asc' },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(
-        error,
-        'proveedor',
-        'listar',
-        { categoria }
-      );
+      throw PrismaErrorMapper.map(error, 'proveedor', 'listar', { categoria });
     }
   }
 
@@ -60,12 +53,7 @@ export class ProveedoresService {
       if (error instanceof ProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'proveedor',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'proveedor', 'consultar', { id });
     }
   }
 
@@ -110,12 +98,9 @@ export class ProveedoresService {
       if (error instanceof ProveedorConflictException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'proveedor',
-        'crear',
-        { createProveedorDto }
-      );
+      throw PrismaErrorMapper.map(error, 'proveedor', 'crear', {
+        createProveedorDto,
+      });
     }
   }
 
@@ -138,7 +123,9 @@ export class ProveedoresService {
         });
 
         if (existingProveedor) {
-          throw new ProveedorConflictException(updateProveedorDto.nombre || proveedor.nombre);
+          throw new ProveedorConflictException(
+            updateProveedorDto.nombre || proveedor.nombre,
+          );
         }
       }
 
@@ -172,20 +159,18 @@ export class ProveedoresService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'proveedor',
-        'actualizar',
-        { id, updateProveedorDto }
-      );
+      throw PrismaErrorMapper.map(error, 'proveedor', 'actualizar', {
+        id,
+        updateProveedorDto,
+      });
     }
   }
 
   async delete(id: number, usuarioId: number) {
     try {
       // Verificar si el proveedor existe
-      const proveedor = await this.getProveedorOrFail(id, { 
-        include: { contactos: true } 
+      const proveedor = await this.getProveedorOrFail(id, {
+        include: { contactos: true },
       });
 
       // Verificar si tiene dependencias (materiales-proveedores)
@@ -221,7 +206,7 @@ export class ProveedoresService {
           nombre: proveedor.nombre,
         },
       );
-      
+
       return { id };
     } catch (error) {
       if (
@@ -230,12 +215,7 @@ export class ProveedoresService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'proveedor',
-        'eliminar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'proveedor', 'eliminar', { id });
     }
   }
 
@@ -252,12 +232,9 @@ export class ProveedoresService {
       if (error instanceof ProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'contacto-proveedor',
-        'listar',
-        { proveedorId }
-      );
+      throw PrismaErrorMapper.map(error, 'contacto-proveedor', 'listar', {
+        proveedorId,
+      });
     }
   }
 
@@ -269,12 +246,9 @@ export class ProveedoresService {
       if (error instanceof ContactoProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'contacto-proveedor',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'contacto-proveedor', 'consultar', {
+        id,
+      });
     }
   }
 
@@ -319,12 +293,9 @@ export class ProveedoresService {
       if (error instanceof ProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'contacto-proveedor',
-        'crear',
-        { createContactoDto }
-      );
+      throw PrismaErrorMapper.map(error, 'contacto-proveedor', 'crear', {
+        createContactoDto,
+      });
     }
   }
 
@@ -369,12 +340,10 @@ export class ProveedoresService {
       if (error instanceof ContactoProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'contacto-proveedor',
-        'actualizar',
-        { id, updateContactoDto }
-      );
+      throw PrismaErrorMapper.map(error, 'contacto-proveedor', 'actualizar', {
+        id,
+        updateContactoDto,
+      });
     }
   }
 
@@ -399,18 +368,15 @@ export class ProveedoresService {
           nombre: contacto.nombre,
         },
       );
-      
+
       return { id };
     } catch (error) {
       if (error instanceof ContactoProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'contacto-proveedor',
-        'eliminar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'contacto-proveedor', 'eliminar', {
+        id,
+      });
     }
   }
 
@@ -420,7 +386,7 @@ export class ProveedoresService {
   private async getProveedorOrFail(id: number, options?: any) {
     try {
       const findOptions: any = { where: { id } };
-      
+
       if (options?.include) {
         findOptions.include = options.include;
       } else {
@@ -428,22 +394,17 @@ export class ProveedoresService {
       }
 
       const proveedor = await this.prisma.proveedor.findUnique(findOptions);
-      
+
       if (!proveedor) {
         throw new ProveedorNotFoundException(id);
       }
-      
+
       return proveedor;
     } catch (error) {
       if (error instanceof ProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'proveedor',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'proveedor', 'consultar', { id });
     }
   }
 
@@ -464,22 +425,19 @@ export class ProveedoresService {
           },
         },
       });
-      
+
       if (!contacto) {
         throw new ContactoProveedorNotFoundException(id);
       }
-      
+
       return contacto;
     } catch (error) {
       if (error instanceof ContactoProveedorNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'contacto-proveedor',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'contacto-proveedor', 'consultar', {
+        id,
+      });
     }
   }
 }

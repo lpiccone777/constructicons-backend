@@ -4,7 +4,7 @@ import { ErrorCode } from '../../../common/constants/error-codes';
 
 export class AsignacionMaterialException extends BaseException {
   constructor(
-    message: string, 
+    message: string,
     errorCode: ErrorCode = 'COMMON_INTERNAL_ERROR',
     status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
     details?: Record<string, any>,

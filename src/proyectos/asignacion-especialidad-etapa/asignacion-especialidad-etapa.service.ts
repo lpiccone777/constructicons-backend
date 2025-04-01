@@ -4,9 +4,7 @@ import { CreateAsignacionEspecialidadEtapaDto } from './dto/create-asignacion-es
 import { UpdateAsignacionEspecialidadEtapaDto } from './dto/update-asignacion-especialidad-etapa.dto';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
-import { 
-  AsignacionEspecialidadEtapaNotFoundException 
-} from './exceptions/asignacion-especialidad-etapa.exception';
+import { AsignacionEspecialidadEtapaNotFoundException } from './exceptions/asignacion-especialidad-etapa.exception';
 import { EspecialidadNotFoundException } from '../../especialidades/exceptions/especialidad.exceptions';
 import { EtapaNotFoundException } from '../etapas/exceptions/etapa.exceptions';
 
@@ -17,13 +15,16 @@ export class AsignacionEspecialidadEtapaService {
     private auditoriaService: AuditoriaService,
   ) {}
 
-  async create(createDto: CreateAsignacionEspecialidadEtapaDto, usuarioId: number) {
+  async create(
+    createDto: CreateAsignacionEspecialidadEtapaDto,
+    usuarioId: number,
+  ) {
     try {
       // Verificar que exista la especialidad
       const especialidad = await this.prisma.especialidad.findUnique({
         where: { id: createDto.especialidadId },
       });
-      
+
       if (!especialidad) {
         throw new EspecialidadNotFoundException(createDto.especialidadId);
       }
@@ -32,15 +33,18 @@ export class AsignacionEspecialidadEtapaService {
       const etapa = await this.prisma.etapaProyecto.findUnique({
         where: { id: createDto.etapaId },
       });
-      
+
       if (!etapa) {
         throw new EtapaNotFoundException(createDto.etapaId);
       }
 
       // Si costoTotal no se envía, calcularlo
-      const costoTotalCalc = createDto.costoTotal !== undefined 
-        ? createDto.costoTotal 
-        : createDto.cantidadRecursos * createDto.horasEstimadas * createDto.valorHora;
+      const costoTotalCalc =
+        createDto.costoTotal !== undefined
+          ? createDto.costoTotal
+          : createDto.cantidadRecursos *
+            createDto.horasEstimadas *
+            createDto.valorHora;
 
       // Construir el objeto de datos garantizando que costoTotal tenga un valor numérico
       const data = {
@@ -51,28 +55,31 @@ export class AsignacionEspecialidadEtapaService {
       const asignacion = await this.prisma.asignacionEspecialidadEtapa.create({
         data,
       });
-      
+
       await this.auditoriaService.registrarAccion(
         usuarioId,
         'inserción',
         'AsignacionEspecialidadEtapa',
         asignacion.id.toString(),
-        { etapaId: asignacion.etapaId, especialidadId: asignacion.especialidadId }
+        {
+          etapaId: asignacion.etapaId,
+          especialidadId: asignacion.especialidadId,
+        },
       );
-      
+
       return asignacion;
     } catch (error) {
       if (
-        error instanceof EspecialidadNotFoundException || 
+        error instanceof EspecialidadNotFoundException ||
         error instanceof EtapaNotFoundException
       ) {
         throw error;
       }
       throw PrismaErrorMapper.map(
-        error, 
+        error,
         'asignacion-especialidad-etapa',
         'crear',
-        { createDto }
+        { createDto },
       );
     }
   }
@@ -84,10 +91,10 @@ export class AsignacionEspecialidadEtapaService {
       });
     } catch (error) {
       throw PrismaErrorMapper.map(
-        error, 
+        error,
         'asignacion-especialidad-etapa',
         'listar',
-        {}
+        {},
       );
     }
   }
@@ -101,36 +108,40 @@ export class AsignacionEspecialidadEtapaService {
         throw error;
       }
       throw PrismaErrorMapper.map(
-        error, 
-        'asignacion-especialidad-etapa', 
-        'consultar', 
-        { id }
+        error,
+        'asignacion-especialidad-etapa',
+        'consultar',
+        { id },
       );
     }
   }
 
-  async update(id: number, updateDto: UpdateAsignacionEspecialidadEtapaDto, usuarioId: number) {
+  async update(
+    id: number,
+    updateDto: UpdateAsignacionEspecialidadEtapaDto,
+    usuarioId: number,
+  ) {
     try {
       // Verificar que exista la asignación
       await this.getAsignacionOrFail(id);
-      
+
       // Si se modifica la especialidad, verificar que exista
       if (updateDto.especialidadId) {
         const especialidad = await this.prisma.especialidad.findUnique({
           where: { id: updateDto.especialidadId },
         });
-        
+
         if (!especialidad) {
           throw new EspecialidadNotFoundException(updateDto.especialidadId);
         }
       }
-      
+
       // Si se modifica la etapa, verificar que exista
       if (updateDto.etapaId) {
         const etapa = await this.prisma.etapaProyecto.findUnique({
           where: { id: updateDto.etapaId },
         });
-        
+
         if (!etapa) {
           throw new EtapaNotFoundException(updateDto.etapaId);
         }
@@ -138,7 +149,7 @@ export class AsignacionEspecialidadEtapaService {
 
       // Obtener asignación actual para cálculos
       const asignacion = await this.getAsignacionOrFail(id);
-      
+
       // Si se actualizan campos que afectan costoTotal, recalcularlo
       if (
         updateDto.cantidadRecursos !== undefined ||
@@ -146,33 +157,37 @@ export class AsignacionEspecialidadEtapaService {
         updateDto.valorHora !== undefined
       ) {
         // Utilizamos fallback a los valores actuales
-        const cantidadRecursos = updateDto.cantidadRecursos !== undefined 
-          ? updateDto.cantidadRecursos 
-          : asignacion.cantidadRecursos;
-        const horasEstimadas = updateDto.horasEstimadas !== undefined 
-          ? updateDto.horasEstimadas 
-          : asignacion.horasEstimadas;
-        const valorHora = updateDto.valorHora !== undefined 
-          ? updateDto.valorHora 
-          : asignacion.valorHora;
-        
+        const cantidadRecursos =
+          updateDto.cantidadRecursos !== undefined
+            ? updateDto.cantidadRecursos
+            : asignacion.cantidadRecursos;
+        const horasEstimadas =
+          updateDto.horasEstimadas !== undefined
+            ? updateDto.horasEstimadas
+            : asignacion.horasEstimadas;
+        const valorHora =
+          updateDto.valorHora !== undefined
+            ? updateDto.valorHora
+            : asignacion.valorHora;
+
         // Aseguramos que sean números, en caso de venir como string, usando Number()
-        updateDto.costoTotal = Number(cantidadRecursos) * Number(horasEstimadas) * Number(valorHora);
+        updateDto.costoTotal =
+          Number(cantidadRecursos) * Number(horasEstimadas) * Number(valorHora);
       }
-      
+
       const updated = await this.prisma.asignacionEspecialidadEtapa.update({
         where: { id },
         data: updateDto,
       });
-      
+
       await this.auditoriaService.registrarAccion(
         usuarioId,
         'actualización',
         'AsignacionEspecialidadEtapa',
         id.toString(),
-        { cambios: updateDto }
+        { cambios: updateDto },
       );
-      
+
       return updated;
     } catch (error) {
       if (
@@ -183,10 +198,10 @@ export class AsignacionEspecialidadEtapaService {
         throw error;
       }
       throw PrismaErrorMapper.map(
-        error, 
-        'asignacion-especialidad-etapa', 
-        'actualizar', 
-        { id, updateDto }
+        error,
+        'asignacion-especialidad-etapa',
+        'actualizar',
+        { id, updateDto },
       );
     }
   }
@@ -195,29 +210,29 @@ export class AsignacionEspecialidadEtapaService {
     try {
       // Verificar que exista la asignación
       await this.getAsignacionOrFail(id);
-      
+
       const deleted = await this.prisma.asignacionEspecialidadEtapa.delete({
         where: { id },
       });
-      
+
       await this.auditoriaService.registrarAccion(
-        usuarioId, 
-        'borrado', 
-        'AsignacionEspecialidadEtapa', 
-        id.toString(), 
-        {}
+        usuarioId,
+        'borrado',
+        'AsignacionEspecialidadEtapa',
+        id.toString(),
+        {},
       );
-      
+
       return deleted;
     } catch (error) {
       if (error instanceof AsignacionEspecialidadEtapaNotFoundException) {
         throw error;
       }
       throw PrismaErrorMapper.map(
-        error, 
-        'asignacion-especialidad-etapa', 
-        'eliminar', 
-        { id }
+        error,
+        'asignacion-especialidad-etapa',
+        'eliminar',
+        { id },
       );
     }
   }
@@ -227,24 +242,25 @@ export class AsignacionEspecialidadEtapaService {
    */
   private async getAsignacionOrFail(id: number) {
     try {
-      const asignacion = await this.prisma.asignacionEspecialidadEtapa.findUnique({
-        where: { id },
-      });
-      
+      const asignacion =
+        await this.prisma.asignacionEspecialidadEtapa.findUnique({
+          where: { id },
+        });
+
       if (!asignacion) {
         throw new AsignacionEspecialidadEtapaNotFoundException(id);
       }
-      
+
       return asignacion;
     } catch (error) {
       if (error instanceof AsignacionEspecialidadEtapaNotFoundException) {
         throw error;
       }
       throw PrismaErrorMapper.map(
-        error, 
-        'asignacion-especialidad-etapa', 
-        'consultar', 
-        { id }
+        error,
+        'asignacion-especialidad-etapa',
+        'consultar',
+        { id },
       );
     }
   }

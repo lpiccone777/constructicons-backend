@@ -41,7 +41,11 @@ export class EspecialidadDependenciesException extends ConflictException {
     super(
       `No se puede eliminar la especialidad porque tiene ${dependencies[1]} ${dependencies[0]} asociados`,
       'ESPECIALIDAD_HAS_DEPENDENCIES' as ErrorCode,
-      { especialidadId, dependencyType: dependencies[0], count: dependencies[1] },
+      {
+        especialidadId,
+        dependencyType: dependencies[0],
+        count: dependencies[1],
+      },
     );
   }
 }

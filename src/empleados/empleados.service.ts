@@ -51,7 +51,12 @@ export class EmpleadosService {
         orderBy: { apellido: 'asc' },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(error, 'empleado', 'consultar-todos', filters);
+      throw PrismaErrorMapper.map(
+        error,
+        'empleado',
+        'consultar-todos',
+        filters,
+      );
     }
   }
 
@@ -110,7 +115,7 @@ export class EmpleadosService {
         const emailExistente = await this.prisma.empleado.findFirst({
           where: { email: createEmpleadoDto.email },
         });
-        
+
         if (emailExistente) {
           throw new EmpleadoConflictException('email', createEmpleadoDto.email);
         }
@@ -177,7 +182,10 @@ export class EmpleadosService {
         });
 
         if (existingEmpleado) {
-          throw new EmpleadoConflictException('código', updateEmpleadoDto.codigo);
+          throw new EmpleadoConflictException(
+            'código',
+            updateEmpleadoDto.codigo,
+          );
         }
       }
 
@@ -187,7 +195,7 @@ export class EmpleadosService {
         updateEmpleadoDto.email !== empleado.email
       ) {
         const emailExistente = await this.prisma.empleado.findFirst({
-          where: { 
+          where: {
             email: updateEmpleadoDto.email,
             id: { not: id }, // Excluir el empleado actual
           },
@@ -202,7 +210,9 @@ export class EmpleadosService {
       const updateData: any = { ...updateEmpleadoDto };
 
       if (updateEmpleadoDto.fechaNacimiento) {
-        updateData.fechaNacimiento = new Date(updateEmpleadoDto.fechaNacimiento);
+        updateData.fechaNacimiento = new Date(
+          updateEmpleadoDto.fechaNacimiento,
+        );
       }
 
       if (updateEmpleadoDto.fechaIngreso) {
@@ -264,17 +274,19 @@ export class EmpleadosService {
       const asignacionesProyecto = empleado.asignacionesProyecto.filter(
         (a: any) => a.activo === true,
       );
-      
+
       const asignacionesTarea = empleado.asignacionesTarea.filter(
         (a: any) => a.activo === true,
       );
-      
+
       if (asignacionesProyecto.length > 0 || asignacionesTarea.length > 0) {
         const dependencies = [];
-        
-        if (asignacionesProyecto.length > 0) dependencies.push('asignaciones a proyectos');
-        if (asignacionesTarea.length > 0) dependencies.push('asignaciones a tareas');
-        
+
+        if (asignacionesProyecto.length > 0)
+          dependencies.push('asignaciones a proyectos');
+        if (asignacionesTarea.length > 0)
+          dependencies.push('asignaciones a tareas');
+
         throw new EmpleadoDependenciesException(id, dependencies);
       }
 

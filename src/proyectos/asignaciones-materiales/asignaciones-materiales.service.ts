@@ -7,10 +7,10 @@ import { CreateAsignacionMaterialDto } from './dto/create-asignacion-material.dt
 import { UpdateAsignacionMaterialDto } from './dto/update-asignacion-material.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
-import { 
+import {
   AsignacionMaterialNotFoundException,
   AsignacionMaterialProyectoEstadoException,
-  AsignacionMaterialDuplicadaException
+  AsignacionMaterialDuplicadaException,
 } from './exceptions/asignacion-material.exceptions';
 import { MaterialNotFoundException } from '../materiales/exceptions/material.exceptions';
 import { TareaNotFoundException } from '../tareas/exceptions/tarea.exceptions';
@@ -94,12 +94,11 @@ export class AsignacionesMaterialesService {
         orderBy: { fechaAsignacion: 'desc' },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(
-        error,
-        'asignacion-material',
-        'listar',
-        { tareaId, materialId, estado }
-      );
+      throw PrismaErrorMapper.map(error, 'asignacion-material', 'listar', {
+        tareaId,
+        materialId,
+        estado,
+      });
     }
   }
 
@@ -111,12 +110,9 @@ export class AsignacionesMaterialesService {
       if (error instanceof AsignacionMaterialNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'asignacion-material',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'asignacion-material', 'consultar', {
+        id,
+      });
     }
   }
 
@@ -143,7 +139,9 @@ export class AsignacionesMaterialesService {
         tarea.etapa.proyecto.estado === 'finalizado' ||
         tarea.etapa.proyecto.estado === 'cancelado'
       ) {
-        throw new AsignacionMaterialProyectoEstadoException(tarea.etapa.proyecto.estado);
+        throw new AsignacionMaterialProyectoEstadoException(
+          tarea.etapa.proyecto.estado,
+        );
       }
 
       // Verificar si el material existe
@@ -156,15 +154,20 @@ export class AsignacionesMaterialesService {
       }
 
       // Verificar si ya existe una asignación para este material y tarea
-      const existingAsignacion = await this.prisma.asignacionMaterial.findFirst({
-        where: {
-          materialId: createDto.materialId,
-          tareaId: createDto.tareaId,
+      const existingAsignacion = await this.prisma.asignacionMaterial.findFirst(
+        {
+          where: {
+            materialId: createDto.materialId,
+            tareaId: createDto.tareaId,
+          },
         },
-      });
+      );
 
       if (existingAsignacion) {
-        throw new AsignacionMaterialDuplicadaException(createDto.materialId, createDto.tareaId);
+        throw new AsignacionMaterialDuplicadaException(
+          createDto.materialId,
+          createDto.tareaId,
+        );
       }
 
       // Crear la asignación
@@ -202,12 +205,9 @@ export class AsignacionesMaterialesService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'asignacion-material',
-        'crear',
-        { createDto }
-      );
+      throw PrismaErrorMapper.map(error, 'asignacion-material', 'crear', {
+        createDto,
+      });
     }
   }
 
@@ -225,7 +225,9 @@ export class AsignacionesMaterialesService {
         asignacion.tarea.etapa.proyecto.estado === 'finalizado' ||
         asignacion.tarea.etapa.proyecto.estado === 'cancelado'
       ) {
-        throw new AsignacionMaterialProyectoEstadoException(asignacion.tarea.etapa.proyecto.estado);
+        throw new AsignacionMaterialProyectoEstadoException(
+          asignacion.tarea.etapa.proyecto.estado,
+        );
       }
 
       // Preparar datos para actualización
@@ -236,10 +238,12 @@ export class AsignacionesMaterialesService {
       }
 
       // Actualizar la asignación
-      const asignacionActualizada = await this.prisma.asignacionMaterial.update({
-        where: { id },
-        data: updateData,
-      });
+      const asignacionActualizada = await this.prisma.asignacionMaterial.update(
+        {
+          where: { id },
+          data: updateData,
+        },
+      );
 
       // Registrar en auditoría
       await this.auditoriaService.registrarAccion(
@@ -258,12 +262,10 @@ export class AsignacionesMaterialesService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'asignacion-material',
-        'actualizar',
-        { id, updateDto }
-      );
+      throw PrismaErrorMapper.map(error, 'asignacion-material', 'actualizar', {
+        id,
+        updateDto,
+      });
     }
   }
 
@@ -288,18 +290,15 @@ export class AsignacionesMaterialesService {
           tareaId: asignacion.tareaId,
         },
       );
-      
+
       return { id };
     } catch (error) {
       if (error instanceof AsignacionMaterialNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'asignacion-material',
-        'eliminar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'asignacion-material', 'eliminar', {
+        id,
+      });
     }
   }
 
@@ -376,7 +375,7 @@ export class AsignacionesMaterialesService {
         error,
         'asignacion-material',
         'resumen-proyecto',
-        { proyectoId }
+        { proyectoId },
       );
     }
   }
@@ -422,22 +421,19 @@ export class AsignacionesMaterialesService {
           },
         },
       });
-      
+
       if (!asignacion) {
         throw new AsignacionMaterialNotFoundException(id);
       }
-      
+
       return asignacion;
     } catch (error) {
       if (error instanceof AsignacionMaterialNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error,
-        'asignacion-material',
-        'consultar',
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'asignacion-material', 'consultar', {
+        id,
+      });
     }
   }
 }

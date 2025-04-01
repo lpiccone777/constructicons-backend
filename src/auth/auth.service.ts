@@ -106,7 +106,9 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     try {
-      const existingUser = await this.usersService.findByEmail(registerDto.email);
+      const existingUser = await this.usersService.findByEmail(
+        registerDto.email,
+      );
       if (existingUser) {
         throw new UserEmailConflictException(registerDto.email);
       }
@@ -178,9 +180,9 @@ export class AuthService {
   async checkToken(token: string) {
     try {
       const payload = this.jwtService.verify(token);
-      return { 
-        valid: true, 
-        userId: payload.sub 
+      return {
+        valid: true,
+        userId: payload.sub,
       };
     } catch (error: any) {
       if (error?.name === 'TokenExpiredError') {

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GremiosService } from './gremios.service';
 import { CreateGremioDto } from './dto/create-gremio.dto';
@@ -38,7 +49,11 @@ export class GremiosController {
   @Put(':id')
   @RequirePermissions('rrhh.actualizar')
   @ApiOperation({ summary: 'Actualizar un gremio' })
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateGremioDto, @Request() req: any) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateGremioDto,
+    @Request() req: any,
+  ) {
     return this.gremiosService.update(id, updateDto, req.user.id);
   }
 

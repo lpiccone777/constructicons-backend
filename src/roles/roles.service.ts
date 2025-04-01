@@ -36,7 +36,9 @@ export class RolesService {
         include: { permisos: true },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(error, 'rol', 'consultar-por-nombre', { nombre });
+      throw PrismaErrorMapper.map(error, 'rol', 'consultar-por-nombre', {
+        nombre,
+      });
     }
   }
 
@@ -46,11 +48,11 @@ export class RolesService {
       const existingRol = await this.prisma.rol.findFirst({
         where: { nombre: data.nombre },
       });
-      
+
       if (existingRol) {
         throw new RolConflictException(data.nombre);
       }
-      
+
       // Preparar permisos si se proporcionan
       let permisosToConnect: { id: number }[] = [];
       if (data.permisos && data.permisos.length > 0) {
@@ -112,7 +114,7 @@ export class RolesService {
         const existingRol = await this.prisma.rol.findFirst({
           where: { nombre: data.nombre },
         });
-        
+
         if (existingRol) {
           throw new RolConflictException(data.nombre);
         }

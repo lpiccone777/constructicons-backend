@@ -12,11 +12,9 @@ import { ErrorCode } from '../../common/constants/error-codes';
  */
 export class RolNotFoundException extends NotFoundException {
   constructor(rolId: number) {
-    super(
-      `Rol con ID ${rolId} no encontrado`,
-      'ROL_NOT_FOUND' as ErrorCode,
-      { rolId },
-    );
+    super(`Rol con ID ${rolId} no encontrado`, 'ROL_NOT_FOUND' as ErrorCode, {
+      rolId,
+    });
   }
 }
 

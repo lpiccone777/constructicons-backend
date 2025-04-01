@@ -54,7 +54,12 @@ export class EmpleadosEspecialidadesService {
         orderBy: { fechaDesde: 'desc' },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(error, 'empleado-especialidad', 'consultar-todos', filters);
+      throw PrismaErrorMapper.map(
+        error,
+        'empleado-especialidad',
+        'consultar-todos',
+        filters,
+      );
     }
   }
 
@@ -75,7 +80,12 @@ export class EmpleadosEspecialidadesService {
       return asignacion;
     } catch (error) {
       if (!(error instanceof EmpleadoEspecialidadNotFoundException)) {
-        throw PrismaErrorMapper.map(error, 'empleado-especialidad', 'consultar', { id });
+        throw PrismaErrorMapper.map(
+          error,
+          'empleado-especialidad',
+          'consultar',
+          { id },
+        );
       }
       throw error;
     }
@@ -102,15 +112,14 @@ export class EmpleadosEspecialidadesService {
       }
 
       // Verificar si ya existe una asignación vigente para esta especialidad y empleado
-      const existingAsignacion = await this.prisma.empleadoEspecialidad.findFirst(
-        {
+      const existingAsignacion =
+        await this.prisma.empleadoEspecialidad.findFirst({
           where: {
             empleadoId: createDto.empleadoId,
             especialidadId: createDto.especialidadId,
             fechaHasta: null, // Solo vigentes
           },
-        },
-      );
+        });
 
       if (existingAsignacion) {
         throw new EmpleadoEspecialidadConflictException(
@@ -210,12 +219,11 @@ export class EmpleadosEspecialidadesService {
       }
 
       // Actualizar la asignación
-      const asignacionActualizada = await this.prisma.empleadoEspecialidad.update(
-        {
+      const asignacionActualizada =
+        await this.prisma.empleadoEspecialidad.update({
           where: { id },
           data: updateData,
-        },
-      );
+        });
 
       // Registrar en auditoría
       await this.auditoriaService.registrarAccion(
@@ -229,10 +237,15 @@ export class EmpleadosEspecialidadesService {
       return asignacionActualizada;
     } catch (error) {
       if (!(error instanceof EmpleadoEspecialidadNotFoundException)) {
-        throw PrismaErrorMapper.map(error, 'empleado-especialidad', 'actualizar', {
-          id,
-          dto: updateDto,
-        });
+        throw PrismaErrorMapper.map(
+          error,
+          'empleado-especialidad',
+          'actualizar',
+          {
+            id,
+            dto: updateDto,
+          },
+        );
       }
       throw error;
     }
@@ -244,14 +257,13 @@ export class EmpleadosEspecialidadesService {
       const asignacion = await this.getAsignacionOrFail(id);
 
       // Eliminar la asignación (soft delete por fechaHasta)
-      const asignacionActualizada = await this.prisma.empleadoEspecialidad.update(
-        {
+      const asignacionActualizada =
+        await this.prisma.empleadoEspecialidad.update({
           where: { id },
           data: {
             fechaHasta: new Date(),
           },
-        },
-      );
+        });
 
       // Registrar en auditoría
       await this.auditoriaService.registrarAccion(
@@ -268,7 +280,12 @@ export class EmpleadosEspecialidadesService {
       return asignacionActualizada;
     } catch (error) {
       if (!(error instanceof EmpleadoEspecialidadNotFoundException)) {
-        throw PrismaErrorMapper.map(error, 'empleado-especialidad', 'eliminar', { id });
+        throw PrismaErrorMapper.map(
+          error,
+          'empleado-especialidad',
+          'eliminar',
+          { id },
+        );
       }
       throw error;
     }
@@ -293,7 +310,12 @@ export class EmpleadosEspecialidadesService {
       return asignacion;
     } catch (error) {
       if (!(error instanceof EmpleadoEspecialidadNotFoundException)) {
-        throw PrismaErrorMapper.map(error, 'empleado-especialidad', 'consultar', { id });
+        throw PrismaErrorMapper.map(
+          error,
+          'empleado-especialidad',
+          'consultar',
+          { id },
+        );
       }
       throw error;
     }

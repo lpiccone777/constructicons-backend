@@ -79,11 +79,7 @@ export class UserDependenciesException extends ConflictException {
  */
 export class InvalidCredentialsException extends UnauthorizedException {
   constructor() {
-    super(
-      'Credenciales inválidas',
-      'INVALID_CREDENTIALS' as ErrorCode,
-      {},
-    );
+    super('Credenciales inválidas', 'INVALID_CREDENTIALS' as ErrorCode, {});
   }
 }
 
@@ -105,10 +101,6 @@ export class UserPermissionException extends ForbiddenException {
  */
 export class UserOperationException extends BusinessException {
   constructor(message: string, details: Record<string, any>) {
-    super(
-      message,
-      'USER_OPERATION_ERROR' as ErrorCode,
-      details,
-    );
+    super(message, 'USER_OPERATION_ERROR' as ErrorCode, details);
   }
 }

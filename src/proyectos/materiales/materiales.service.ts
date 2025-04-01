@@ -5,10 +5,10 @@ import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
-import { 
-  MaterialNotFoundException, 
+import {
+  MaterialNotFoundException,
   MaterialCodigoConflictException,
-  MaterialDependenciesException
+  MaterialDependenciesException,
 } from './exceptions/material.exceptions';
 
 @Injectable()
@@ -31,12 +31,7 @@ export class MaterialesService {
         orderBy: { nombre: 'asc' },
       });
     } catch (error) {
-      throw PrismaErrorMapper.map(
-        error, 
-        'material',
-        'listar',
-        { categoria }
-      );
+      throw PrismaErrorMapper.map(error, 'material', 'listar', { categoria });
     }
   }
 
@@ -48,12 +43,7 @@ export class MaterialesService {
       if (error instanceof MaterialNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error, 
-        'material', 
-        'consultar', 
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'material', 'consultar', { id });
     }
   }
 
@@ -100,12 +90,9 @@ export class MaterialesService {
       if (error instanceof MaterialCodigoConflictException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error, 
-        'material',
-        'crear',
-        { createMaterialDto }
-      );
+      throw PrismaErrorMapper.map(error, 'material', 'crear', {
+        createMaterialDto,
+      });
     }
   }
 
@@ -168,12 +155,10 @@ export class MaterialesService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error, 
-        'material', 
-        'actualizar', 
-        { id, updateMaterialDto }
-      );
+      throw PrismaErrorMapper.map(error, 'material', 'actualizar', {
+        id,
+        updateMaterialDto,
+      });
     }
   }
 
@@ -191,9 +176,11 @@ export class MaterialesService {
         throw new MaterialDependenciesException(id);
       }
 
-      const asignacionesMateriales = await this.prisma.asignacionMaterial.count({
-        where: { materialId: id },
-      });
+      const asignacionesMateriales = await this.prisma.asignacionMaterial.count(
+        {
+          where: { materialId: id },
+        },
+      );
 
       if (asignacionesMateriales > 0) {
         throw new MaterialDependenciesException(id);
@@ -224,12 +211,7 @@ export class MaterialesService {
       ) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error, 
-        'material', 
-        'eliminar', 
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'material', 'eliminar', { id });
     }
   }
 
@@ -243,12 +225,7 @@ export class MaterialesService {
 
       return categorias;
     } catch (error) {
-      throw PrismaErrorMapper.map(
-        error, 
-        'material',
-        'listar-categorias',
-        {}
-      );
+      throw PrismaErrorMapper.map(error, 'material', 'listar-categorias', {});
     }
   }
 
@@ -260,22 +237,17 @@ export class MaterialesService {
       const material = await this.prisma.material.findUnique({
         where: { id },
       });
-      
+
       if (!material) {
         throw new MaterialNotFoundException(id);
       }
-      
+
       return material;
     } catch (error) {
       if (error instanceof MaterialNotFoundException) {
         throw error;
       }
-      throw PrismaErrorMapper.map(
-        error, 
-        'material', 
-        'consultar', 
-        { id }
-      );
+      throw PrismaErrorMapper.map(error, 'material', 'consultar', { id });
     }
   }
 }
