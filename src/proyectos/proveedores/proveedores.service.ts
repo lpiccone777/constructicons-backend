@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { CreateProveedorDto } from './dto/create-proveedor.dto';
@@ -10,6 +6,15 @@ import { UpdateProveedorDto } from './dto/update-proveedor.dto';
 import { CreateContactoDto } from './dto/create-contacto.dto';
 import { UpdateContactoDto } from './dto/update-contacto.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
+import {
+  ProveedorNotFoundException,
+  ProveedorConflictException,
+  ProveedorDependenciesException
+} from './exceptions/proveedor.exceptions';
+import {
+  ContactoProveedorNotFoundException
+} from './exceptions/contacto-proveedor.exceptions';
 
 @Injectable()
 export class ProveedoresService {
@@ -19,78 +24,99 @@ export class ProveedoresService {
   ) {}
 
   async findAll(categoria?: string) {
-    const where: Record<string, any> = {};
+    try {
+      const where: Record<string, any> = {};
 
-    if (categoria) {
-      where.categorias = {
-        has: categoria,
-      };
-    }
+      if (categoria) {
+        where.categorias = {
+          has: categoria,
+        };
+      }
 
-    return this.prisma.proveedor.findMany({
-      where,
-      include: {
-        _count: {
-          select: { contactos: true },
+      return await this.prisma.proveedor.findMany({
+        where,
+        include: {
+          _count: {
+            select: { contactos: true },
+          },
         },
-      },
-      orderBy: { nombre: 'asc' },
-    });
+        orderBy: { nombre: 'asc' },
+      });
+    } catch (error) {
+      throw PrismaErrorMapper.map(
+        error,
+        'proveedor',
+        'listar',
+        { categoria }
+      );
+    }
   }
 
   async findById(id: number) {
-    const proveedor = await this.prisma.proveedor.findUnique({
-      where: { id },
-      include: {
-        contactos: true,
-      },
-    });
-
-    if (!proveedor) {
-      throw new NotFoundException(`Proveedor con ID ${id} no encontrado`);
+    try {
+      const proveedor = await this.getProveedorOrFail(id);
+      return proveedor;
+    } catch (error) {
+      if (error instanceof ProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'proveedor',
+        'consultar',
+        { id }
+      );
     }
-
-    return proveedor;
   }
 
   async create(createProveedorDto: CreateProveedorDto, usuarioId: number) {
-    // Verificar si ya existe un proveedor con el mismo código
-    const existingProveedor = await this.prisma.proveedor.findUnique({
-      where: { codigo: createProveedorDto.codigo },
-    });
+    try {
+      // Verificar si ya existe un proveedor con el mismo código
+      const existingProveedor = await this.prisma.proveedor.findUnique({
+        where: { codigo: createProveedorDto.codigo },
+      });
 
-    if (existingProveedor) {
-      throw new ConflictException(
-        `Ya existe un proveedor con el código ${createProveedorDto.codigo}`,
+      if (existingProveedor) {
+        throw new ProveedorConflictException(createProveedorDto.nombre);
+      }
+
+      // Preparar datos con los tipos correctos
+      const proveedorData = {
+        ...createProveedorDto,
+        descuento: createProveedorDto.descuento
+          ? new Decimal(createProveedorDto.descuento)
+          : null,
+      };
+
+      // Crear el proveedor
+      const nuevoProveedor = await this.prisma.proveedor.create({
+        data: proveedorData,
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'inserción',
+        'Proveedor',
+        nuevoProveedor.id.toString(),
+        {
+          codigo: nuevoProveedor.codigo,
+          nombre: nuevoProveedor.nombre,
+        },
+      );
+
+      return nuevoProveedor;
+    } catch (error) {
+      if (error instanceof ProveedorConflictException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'proveedor',
+        'crear',
+        { createProveedorDto }
       );
     }
-
-    // Preparar datos con los tipos correctos
-    const proveedorData = {
-      ...createProveedorDto,
-      descuento: createProveedorDto.descuento
-        ? new Decimal(createProveedorDto.descuento)
-        : null,
-    };
-
-    // Crear el proveedor
-    const nuevoProveedor = await this.prisma.proveedor.create({
-      data: proveedorData,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'inserción',
-      'Proveedor',
-      nuevoProveedor.id.toString(),
-      {
-        codigo: nuevoProveedor.codigo,
-        nombre: nuevoProveedor.nombre,
-      },
-    );
-
-    return nuevoProveedor;
   }
 
   async update(
@@ -98,70 +124,79 @@ export class ProveedoresService {
     updateProveedorDto: UpdateProveedorDto,
     usuarioId: number,
   ) {
-    // Verificar si el proveedor existe
-    const proveedor = await this.prisma.proveedor.findUnique({
-      where: { id },
-    });
+    try {
+      // Verificar si el proveedor existe
+      const proveedor = await this.getProveedorOrFail(id);
 
-    if (!proveedor) {
-      throw new NotFoundException(`Proveedor con ID ${id} no encontrado`);
-    }
+      // Verificar si se está actualizando el código y si ya existe
+      if (
+        updateProveedorDto.codigo &&
+        updateProveedorDto.codigo !== proveedor.codigo
+      ) {
+        const existingProveedor = await this.prisma.proveedor.findUnique({
+          where: { codigo: updateProveedorDto.codigo },
+        });
 
-    // Verificar si se está actualizando el código y si ya existe
-    if (
-      updateProveedorDto.codigo &&
-      updateProveedorDto.codigo !== proveedor.codigo
-    ) {
-      const existingProveedor = await this.prisma.proveedor.findUnique({
-        where: { codigo: updateProveedorDto.codigo },
+        if (existingProveedor) {
+          throw new ProveedorConflictException(updateProveedorDto.nombre || proveedor.nombre);
+        }
+      }
+
+      // Preparar datos para actualización
+      const updateData: any = { ...updateProveedorDto };
+
+      if (updateProveedorDto.descuento) {
+        updateData.descuento = new Decimal(updateProveedorDto.descuento);
+      }
+
+      // Actualizar el proveedor
+      const proveedorActualizado = await this.prisma.proveedor.update({
+        where: { id },
+        data: updateData,
       });
 
-      if (existingProveedor) {
-        throw new ConflictException(
-          `Ya existe un proveedor con el código ${updateProveedorDto.codigo}`,
-        );
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'actualización',
+        'Proveedor',
+        id.toString(),
+        { cambios: updateProveedorDto },
+      );
+
+      return proveedorActualizado;
+    } catch (error) {
+      if (
+        error instanceof ProveedorNotFoundException ||
+        error instanceof ProveedorConflictException
+      ) {
+        throw error;
       }
+      throw PrismaErrorMapper.map(
+        error,
+        'proveedor',
+        'actualizar',
+        { id, updateProveedorDto }
+      );
     }
-
-    // Preparar datos para actualización
-    const updateData: any = { ...updateProveedorDto };
-
-    if (updateProveedorDto.descuento) {
-      updateData.descuento = new Decimal(updateProveedorDto.descuento);
-    }
-
-    // Actualizar el proveedor
-    const proveedorActualizado = await this.prisma.proveedor.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'actualización',
-      'Proveedor',
-      id.toString(),
-      { cambios: updateProveedorDto },
-    );
-
-    return proveedorActualizado;
   }
 
   async delete(id: number, usuarioId: number) {
-    // Verificar si el proveedor existe
-    const proveedor = await this.prisma.proveedor.findUnique({
-      where: { id },
-      include: {
-        contactos: true,
-      },
-    });
-
-    if (!proveedor) {
-      throw new NotFoundException(`Proveedor con ID ${id} no encontrado`);
-    }
-
     try {
+      // Verificar si el proveedor existe
+      const proveedor = await this.getProveedorOrFail(id, { 
+        include: { contactos: true } 
+      });
+
+      // Verificar si tiene dependencias (materiales-proveedores)
+      const materialesProveedores = await this.prisma.materialProveedor.count({
+        where: { proveedorId: id },
+      });
+
+      if (materialesProveedores > 0) {
+        throw new ProveedorDependenciesException(id, ['materiales']);
+      }
+
       // Usar transacción para eliminar proveedor y sus contactos
       await this.prisma.$transaction(async (prisma) => {
         // Primero eliminar contactos asociados
@@ -188,101 +223,111 @@ export class ProveedoresService {
           nombre: proveedor.nombre,
         },
       );
+      
+      return { id };
     } catch (error) {
-      // Corrección aquí
-      if (error instanceof Error && 'code' in error && error.code === 'P2003') {
-        // Foreign key constraint failed
-        throw new ConflictException(
-          `No se puede eliminar el proveedor porque tiene relaciones con otras entidades`,
-        );
+      if (
+        error instanceof ProveedorNotFoundException ||
+        error instanceof ProveedorDependenciesException
+      ) {
+        throw error;
       }
-      throw error;
+      throw PrismaErrorMapper.map(
+        error,
+        'proveedor',
+        'eliminar',
+        { id }
+      );
     }
   }
 
   // Métodos para manejo de contactos
   async findContactos(proveedorId: number) {
-    // Verificar si el proveedor existe
-    const proveedor = await this.prisma.proveedor.findUnique({
-      where: { id: proveedorId },
-    });
+    try {
+      // Verificar si el proveedor existe
+      await this.getProveedorOrFail(proveedorId);
 
-    if (!proveedor) {
-      throw new NotFoundException(
-        `Proveedor con ID ${proveedorId} no encontrado`,
+      return await this.prisma.contactoProveedor.findMany({
+        where: { proveedorId },
+      });
+    } catch (error) {
+      if (error instanceof ProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'contacto-proveedor',
+        'listar',
+        { proveedorId }
       );
     }
-
-    return this.prisma.contactoProveedor.findMany({
-      where: { proveedorId },
-    });
   }
 
   async findContactoById(id: number) {
-    const contacto = await this.prisma.contactoProveedor.findUnique({
-      where: { id },
-      include: {
-        proveedor: {
-          select: {
-            id: true,
-            codigo: true,
-            nombre: true,
-          },
-        },
-      },
-    });
-
-    if (!contacto) {
-      throw new NotFoundException(`Contacto con ID ${id} no encontrado`);
+    try {
+      const contacto = await this.getContactoOrFail(id);
+      return contacto;
+    } catch (error) {
+      if (error instanceof ContactoProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'contacto-proveedor',
+        'consultar',
+        { id }
+      );
     }
-
-    return contacto;
   }
 
   async createContacto(
     createContactoDto: CreateContactoDto,
     usuarioId: number,
   ) {
-    // Verificar si el proveedor existe
-    const proveedor = await this.prisma.proveedor.findUnique({
-      where: { id: createContactoDto.proveedorId },
-    });
+    try {
+      // Verificar si el proveedor existe
+      await this.getProveedorOrFail(createContactoDto.proveedorId);
 
-    if (!proveedor) {
-      throw new NotFoundException(
-        `Proveedor con ID ${createContactoDto.proveedorId} no encontrado`,
+      // Si el contacto es principal, actualizar otros contactos
+      if (createContactoDto.esPrincipal) {
+        await this.prisma.contactoProveedor.updateMany({
+          where: {
+            proveedorId: createContactoDto.proveedorId,
+            esPrincipal: true,
+          },
+          data: { esPrincipal: false },
+        });
+      }
+
+      // Crear el contacto
+      const nuevoContacto = await this.prisma.contactoProveedor.create({
+        data: createContactoDto,
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'inserción',
+        'ContactoProveedor',
+        nuevoContacto.id.toString(),
+        {
+          proveedorId: nuevoContacto.proveedorId,
+          nombre: nuevoContacto.nombre,
+        },
+      );
+
+      return nuevoContacto;
+    } catch (error) {
+      if (error instanceof ProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'contacto-proveedor',
+        'crear',
+        { createContactoDto }
       );
     }
-
-    // Si el contacto es principal, actualizar otros contactos
-    if (createContactoDto.esPrincipal) {
-      await this.prisma.contactoProveedor.updateMany({
-        where: {
-          proveedorId: createContactoDto.proveedorId,
-          esPrincipal: true,
-        },
-        data: { esPrincipal: false },
-      });
-    }
-
-    // Crear el contacto
-    const nuevoContacto = await this.prisma.contactoProveedor.create({
-      data: createContactoDto,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'inserción',
-      'ContactoProveedor',
-      nuevoContacto.id.toString(),
-      {
-        proveedorId: nuevoContacto.proveedorId,
-        nombre: nuevoContacto.nombre,
-      },
-    );
-
-    return nuevoContacto;
   }
 
   async updateContacto(
@@ -290,70 +335,153 @@ export class ProveedoresService {
     updateContactoDto: UpdateContactoDto,
     usuarioId: number,
   ) {
-    // Verificar si el contacto existe
-    const contacto = await this.prisma.contactoProveedor.findUnique({
-      where: { id },
-    });
+    try {
+      // Verificar si el contacto existe
+      const contacto = await this.getContactoOrFail(id);
 
-    if (!contacto) {
-      throw new NotFoundException(`Contacto con ID ${id} no encontrado`);
-    }
+      // Si se está marcando como principal, actualizar otros contactos
+      if (updateContactoDto.esPrincipal) {
+        await this.prisma.contactoProveedor.updateMany({
+          where: {
+            proveedorId: contacto.proveedorId,
+            id: { not: id },
+            esPrincipal: true,
+          },
+          data: { esPrincipal: false },
+        });
+      }
 
-    // Si se está marcando como principal, actualizar otros contactos
-    if (updateContactoDto.esPrincipal) {
-      await this.prisma.contactoProveedor.updateMany({
-        where: {
-          proveedorId: contacto.proveedorId,
-          id: { not: id },
-          esPrincipal: true,
-        },
-        data: { esPrincipal: false },
+      // Actualizar el contacto
+      const contactoActualizado = await this.prisma.contactoProveedor.update({
+        where: { id },
+        data: updateContactoDto,
       });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'actualización',
+        'ContactoProveedor',
+        id.toString(),
+        { cambios: updateContactoDto },
+      );
+
+      return contactoActualizado;
+    } catch (error) {
+      if (error instanceof ContactoProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'contacto-proveedor',
+        'actualizar',
+        { id, updateContactoDto }
+      );
     }
-
-    // Actualizar el contacto
-    const contactoActualizado = await this.prisma.contactoProveedor.update({
-      where: { id },
-      data: updateContactoDto,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'actualización',
-      'ContactoProveedor',
-      id.toString(),
-      { cambios: updateContactoDto },
-    );
-
-    return contactoActualizado;
   }
 
   async deleteContacto(id: number, usuarioId: number) {
-    // Verificar si el contacto existe
-    const contacto = await this.prisma.contactoProveedor.findUnique({
-      where: { id },
-    });
+    try {
+      // Verificar si el contacto existe
+      const contacto = await this.getContactoOrFail(id);
 
-    if (!contacto) {
-      throw new NotFoundException(`Contacto con ID ${id} no encontrado`);
+      // Eliminar el contacto
+      await this.prisma.contactoProveedor.delete({
+        where: { id },
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'borrado',
+        'ContactoProveedor',
+        id.toString(),
+        {
+          proveedorId: contacto.proveedorId,
+          nombre: contacto.nombre,
+        },
+      );
+      
+      return { id };
+    } catch (error) {
+      if (error instanceof ContactoProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'contacto-proveedor',
+        'eliminar',
+        { id }
+      );
     }
+  }
 
-    // Eliminar el contacto
-    await this.prisma.contactoProveedor.delete({
-      where: { id },
-    });
+  /**
+   * Método auxiliar para obtener un proveedor o lanzar excepción si no existe
+   */
+  private async getProveedorOrFail(id: number, options?: any) {
+    try {
+      const findOptions: any = { where: { id } };
+      
+      if (options?.include) {
+        findOptions.include = options.include;
+      } else {
+        findOptions.include = { contactos: true };
+      }
 
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'borrado',
-      'ContactoProveedor',
-      id.toString(),
-      {
-        proveedorId: contacto.proveedorId,
-        nombre: contacto.nombre,
-      },
-    );
+      const proveedor = await this.prisma.proveedor.findUnique(findOptions);
+      
+      if (!proveedor) {
+        throw new ProveedorNotFoundException(id);
+      }
+      
+      return proveedor;
+    } catch (error) {
+      if (error instanceof ProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'proveedor',
+        'consultar',
+        { id }
+      );
+    }
+  }
+
+  /**
+   * Método auxiliar para obtener un contacto o lanzar excepción si no existe
+   */
+  private async getContactoOrFail(id: number) {
+    try {
+      const contacto = await this.prisma.contactoProveedor.findUnique({
+        where: { id },
+        include: {
+          proveedor: {
+            select: {
+              id: true,
+              codigo: true,
+              nombre: true,
+            },
+          },
+        },
+      });
+      
+      if (!contacto) {
+        throw new ContactoProveedorNotFoundException(id);
+      }
+      
+      return contacto;
+    } catch (error) {
+      if (error instanceof ContactoProveedorNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error,
+        'contacto-proveedor',
+        'consultar',
+        { id }
+      );
+    }
   }
 }

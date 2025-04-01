@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+// src/gremio-especialidad/gremio-especialidad.service.ts
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGremioEspecialidadDto } from './dto/create-gremio-especialidad.dto';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { PrismaErrorMapper } from '../common/exceptions/prisma-error.mapper';
+import {
+  GremioEspecialidadNotFoundException,
+  GremioEspecialidadConflictException,
+  GremioEspecialidadDependenciesException,
+} from './exceptions';
 
 @Injectable()
 export class GremioEspecialidadService {
@@ -11,60 +18,134 @@ export class GremioEspecialidadService {
   ) {}
 
   async create(createDto: CreateGremioEspecialidadDto, usuarioId: number) {
-    const existente = await this.prisma.gremioEspecialidad.findUnique({
-      where: {
-        gremioId_especialidadId: {
-          gremioId: createDto.gremioId,
-          especialidadId: createDto.especialidadId,
+    try {
+      // Verificar si ya existe la relación
+      const existente = await this.prisma.gremioEspecialidad.findUnique({
+        where: {
+          gremioId_especialidadId: {
+            gremioId: createDto.gremioId,
+            especialidadId: createDto.especialidadId,
+          },
         },
-      },
-    });
-    if (existente) {
-      throw new ConflictException(
-        `La especialidad con ID ${createDto.especialidadId} ya está asociada al gremio con ID ${createDto.gremioId}`
+      });
+      
+      if (existente) {
+        throw new GremioEspecialidadConflictException(
+          createDto.gremioId,
+          createDto.especialidadId
+        );
+      }
+      
+      // Crear la relación
+      const relacion = await this.prisma.gremioEspecialidad.create({
+        data: createDto,
+      });
+      
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'inserción',
+        'GremioEspecialidad',
+        relacion.id.toString(),
+        { gremioId: relacion.gremioId, especialidadId: relacion.especialidadId }
       );
+      
+      return relacion;
+    } catch (error) {
+      if (!(error instanceof GremioEspecialidadConflictException)) {
+        throw PrismaErrorMapper.map(error, 'gremio-especialidad', 'crear', {
+          dto: createDto,
+        });
+      }
+      throw error;
     }
-    const relacion = await this.prisma.gremioEspecialidad.create({
-      data: createDto,
-    });
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'inserción',
-      'GremioEspecialidad',
-      relacion.id.toString(),
-      { gremioId: relacion.gremioId, especialidadId: relacion.especialidadId }
-    );
-    return relacion;
   }
 
   async findAll() {
-    return this.prisma.gremioEspecialidad.findMany({
-      orderBy: { id: 'asc' },
-    });
+    try {
+      return await this.prisma.gremioEspecialidad.findMany({
+        orderBy: { id: 'asc' },
+      });
+    } catch (error) {
+      throw PrismaErrorMapper.map(error, 'gremio-especialidad', 'consultar-todos', {});
+    }
   }
 
   async findOne(id: number) {
-    const relacion = await this.prisma.gremioEspecialidad.findUnique({
-      where: { id },
-    });
-    if (!relacion) {
-      throw new NotFoundException(`No se encontró la asociación con ID ${id}`);
+    try {
+      const relacion = await this.prisma.gremioEspecialidad.findUnique({
+        where: { id },
+      });
+      
+      if (!relacion) {
+        throw new GremioEspecialidadNotFoundException(id);
+      }
+      
+      return relacion;
+    } catch (error) {
+      if (!(error instanceof GremioEspecialidadNotFoundException)) {
+        throw PrismaErrorMapper.map(error, 'gremio-especialidad', 'consultar', { id });
+      }
+      throw error;
     }
-    return relacion;
   }
 
   async delete(id: number, usuarioId: number) {
-    await this.findOne(id);
-    const deleted = await this.prisma.gremioEspecialidad.delete({
-      where: { id },
-    });
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'borrado',
-      'GremioEspecialidad',
-      id.toString(),
-      {}
-    );
-    return deleted;
+    try {
+      // Verificar si la relación existe
+      const relacion = await this.getRelacionOrFail(id);
+      
+      // Verificar si hay dependencias
+      // En este caso podríamos verificar empleados que tengan esta especialidad asociada al gremio
+      
+      // Eliminar la relación
+      const deleted = await this.prisma.gremioEspecialidad.delete({
+        where: { id },
+      });
+      
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'borrado',
+        'GremioEspecialidad',
+        id.toString(),
+        { 
+          gremioId: relacion.gremioId, 
+          especialidadId: relacion.especialidadId 
+        }
+      );
+      
+      return deleted;
+    } catch (error) {
+      if (!(error instanceof GremioEspecialidadNotFoundException)) {
+        throw PrismaErrorMapper.map(error, 'gremio-especialidad', 'eliminar', { id });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Método auxiliar para verificar que una relación existe y obtenerla
+   * @param id ID de la relación
+   * @returns La relación encontrada
+   * @throws GremioEspecialidadNotFoundException si la relación no existe
+   */
+  private async getRelacionOrFail(id: number): Promise<any> {
+    try {
+      const relacion = await this.prisma.gremioEspecialidad.findUnique({
+        where: { id },
+      });
+
+      if (!relacion) {
+        throw new GremioEspecialidadNotFoundException(id);
+      }
+
+      return relacion;
+    } catch (error) {
+      if (!(error instanceof GremioEspecialidadNotFoundException)) {
+        throw PrismaErrorMapper.map(error, 'gremio-especialidad', 'consultar', { id });
+      }
+      throw error;
+    }
   }
 }

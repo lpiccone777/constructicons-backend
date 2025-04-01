@@ -1,13 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditoriaService } from '../../auditoria/auditoria.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaErrorMapper } from '../../common/exceptions/prisma-error.mapper';
+import { 
+  MaterialNotFoundException, 
+  MaterialCodigoConflictException,
+  MaterialDependenciesException
+} from './exceptions/material.exceptions';
 
 @Injectable()
 export class MaterialesService {
@@ -17,70 +19,94 @@ export class MaterialesService {
   ) {}
 
   async findAll(categoria?: string) {
-    const where: Record<string, any> = {};
+    try {
+      const where: Record<string, any> = {};
 
-    if (categoria) {
-      where.categoria = categoria;
+      if (categoria) {
+        where.categoria = categoria;
+      }
+
+      return await this.prisma.material.findMany({
+        where,
+        orderBy: { nombre: 'asc' },
+      });
+    } catch (error) {
+      throw PrismaErrorMapper.map(
+        error, 
+        'material',
+        'listar',
+        { categoria }
+      );
     }
-
-    return this.prisma.material.findMany({
-      where,
-      orderBy: { nombre: 'asc' },
-    });
   }
 
   async findById(id: number) {
-    const material = await this.prisma.material.findUnique({
-      where: { id },
-    });
-
-    if (!material) {
-      throw new NotFoundException(`Material con ID ${id} no encontrado`);
+    try {
+      const material = await this.getMaterialOrFail(id);
+      return material;
+    } catch (error) {
+      if (error instanceof MaterialNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error, 
+        'material', 
+        'consultar', 
+        { id }
+      );
     }
-
-    return material;
   }
 
   async create(createMaterialDto: CreateMaterialDto, usuarioId: number) {
-    // Verificar si ya existe un material con el mismo código
-    const existingMaterial = await this.prisma.material.findUnique({
-      where: { codigo: createMaterialDto.codigo },
-    });
+    try {
+      // Verificar si ya existe un material con el mismo código
+      const existingMaterial = await this.prisma.material.findUnique({
+        where: { codigo: createMaterialDto.codigo },
+      });
 
-    if (existingMaterial) {
-      throw new ConflictException(
-        `Ya existe un material con el código ${createMaterialDto.codigo}`,
+      if (existingMaterial) {
+        throw new MaterialCodigoConflictException(createMaterialDto.codigo);
+      }
+
+      // Convertir datos de string a tipos apropiados
+      const materialData = {
+        ...createMaterialDto,
+        precioReferencia: new Decimal(createMaterialDto.precioReferencia),
+        stockMinimo: createMaterialDto.stockMinimo
+          ? new Decimal(createMaterialDto.stockMinimo)
+          : null,
+      };
+
+      // Crear el material
+      const nuevoMaterial = await this.prisma.material.create({
+        data: materialData,
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'inserción',
+        'Material',
+        nuevoMaterial.id.toString(),
+        {
+          codigo: nuevoMaterial.codigo,
+          nombre: nuevoMaterial.nombre,
+          categoria: nuevoMaterial.categoria,
+        },
+      );
+
+      return nuevoMaterial;
+    } catch (error) {
+      if (error instanceof MaterialCodigoConflictException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error, 
+        'material',
+        'crear',
+        { createMaterialDto }
       );
     }
-
-    // Convertir datos de string a tipos apropiados
-    const materialData = {
-      ...createMaterialDto,
-      precioReferencia: new Decimal(createMaterialDto.precioReferencia),
-      stockMinimo: createMaterialDto.stockMinimo
-        ? new Decimal(createMaterialDto.stockMinimo)
-        : null,
-    };
-
-    // Crear el material
-    const nuevoMaterial = await this.prisma.material.create({
-      data: materialData,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'inserción',
-      'Material',
-      nuevoMaterial.id.toString(),
-      {
-        codigo: nuevoMaterial.codigo,
-        nombre: nuevoMaterial.nombre,
-        categoria: nuevoMaterial.categoria,
-      },
-    );
-
-    return nuevoMaterial;
   }
 
   async update(
@@ -88,97 +114,168 @@ export class MaterialesService {
     updateMaterialDto: UpdateMaterialDto,
     usuarioId: number,
   ) {
-    // Verificar si el material existe
-    const material = await this.prisma.material.findUnique({
-      where: { id },
-    });
+    try {
+      // Verificar si el material existe
+      await this.getMaterialOrFail(id);
 
-    if (!material) {
-      throw new NotFoundException(`Material con ID ${id} no encontrado`);
-    }
+      // Verificar si se está actualizando el código y si ya existe
+      if (
+        updateMaterialDto.codigo &&
+        updateMaterialDto.codigo !== (await this.getMaterialOrFail(id)).codigo
+      ) {
+        const existingMaterial = await this.prisma.material.findUnique({
+          where: { codigo: updateMaterialDto.codigo },
+        });
 
-    // Verificar si se está actualizando el código y si ya existe
-    if (
-      updateMaterialDto.codigo &&
-      updateMaterialDto.codigo !== material.codigo
-    ) {
-      const existingMaterial = await this.prisma.material.findUnique({
-        where: { codigo: updateMaterialDto.codigo },
-      });
+        if (existingMaterial) {
+          throw new MaterialCodigoConflictException(updateMaterialDto.codigo);
+        }
+      }
 
-      if (existingMaterial) {
-        throw new ConflictException(
-          `Ya existe un material con el código ${updateMaterialDto.codigo}`,
+      // Preparar datos para actualización
+      const updateData: any = { ...updateMaterialDto };
+
+      if (updateMaterialDto.precioReferencia) {
+        updateData.precioReferencia = new Decimal(
+          updateMaterialDto.precioReferencia,
         );
       }
-    }
 
-    // Preparar datos para actualización
-    const updateData: any = { ...updateMaterialDto };
+      if (updateMaterialDto.stockMinimo) {
+        updateData.stockMinimo = new Decimal(updateMaterialDto.stockMinimo);
+      }
 
-    if (updateMaterialDto.precioReferencia) {
-      updateData.precioReferencia = new Decimal(
-        updateMaterialDto.precioReferencia,
+      // Actualizar el material
+      const materialActualizado = await this.prisma.material.update({
+        where: { id },
+        data: updateData,
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'actualización',
+        'Material',
+        id.toString(),
+        { cambios: updateMaterialDto },
+      );
+
+      return materialActualizado;
+    } catch (error) {
+      if (
+        error instanceof MaterialNotFoundException ||
+        error instanceof MaterialCodigoConflictException
+      ) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error, 
+        'material', 
+        'actualizar', 
+        { id, updateMaterialDto }
       );
     }
-
-    if (updateMaterialDto.stockMinimo) {
-      updateData.stockMinimo = new Decimal(updateMaterialDto.stockMinimo);
-    }
-
-    // Actualizar el material
-    const materialActualizado = await this.prisma.material.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'actualización',
-      'Material',
-      id.toString(),
-      { cambios: updateMaterialDto },
-    );
-
-    return materialActualizado;
   }
 
   async delete(id: number, usuarioId: number) {
-    // Verificar si el material existe
-    const material = await this.prisma.material.findUnique({
-      where: { id },
-    });
+    try {
+      // Verificar si el material existe
+      const material = await this.getMaterialOrFail(id);
 
-    if (!material) {
-      throw new NotFoundException(`Material con ID ${id} no encontrado`);
+      // Verificar si tiene dependencias (asignaciones, etc.)
+      const materialesProveedores = await this.prisma.materialProveedor.count({
+        where: { materialId: id },
+      });
+
+      if (materialesProveedores > 0) {
+        throw new MaterialDependenciesException(id);
+      }
+
+      const asignacionesMateriales = await this.prisma.asignacionMaterial.count({
+        where: { materialId: id },
+      });
+
+      if (asignacionesMateriales > 0) {
+        throw new MaterialDependenciesException(id);
+      }
+
+      // Eliminar el material
+      await this.prisma.material.delete({
+        where: { id },
+      });
+
+      // Registrar en auditoría
+      await this.auditoriaService.registrarAccion(
+        usuarioId,
+        'borrado',
+        'Material',
+        id.toString(),
+        {
+          codigo: material.codigo,
+          nombre: material.nombre,
+        },
+      );
+
+      return { id };
+    } catch (error) {
+      if (
+        error instanceof MaterialNotFoundException ||
+        error instanceof MaterialDependenciesException
+      ) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error, 
+        'material', 
+        'eliminar', 
+        { id }
+      );
     }
-
-    // Eliminar el material
-    await this.prisma.material.delete({
-      where: { id },
-    });
-
-    // Registrar en auditoría
-    await this.auditoriaService.registrarAccion(
-      usuarioId,
-      'borrado',
-      'Material',
-      id.toString(),
-      {
-        codigo: material.codigo,
-        nombre: material.nombre,
-      },
-    );
   }
 
   async findByCategorias() {
-    // Obtener materiales agrupados por categoría
-    const categorias = await this.prisma.material.groupBy({
-      by: ['categoria'],
-      _count: true,
-    });
+    try {
+      // Obtener materiales agrupados por categoría
+      const categorias = await this.prisma.material.groupBy({
+        by: ['categoria'],
+        _count: true,
+      });
 
-    return categorias;
+      return categorias;
+    } catch (error) {
+      throw PrismaErrorMapper.map(
+        error, 
+        'material',
+        'listar-categorias',
+        {}
+      );
+    }
+  }
+
+  /**
+   * Método auxiliar para obtener un material o lanzar excepción si no existe
+   */
+  private async getMaterialOrFail(id: number) {
+    try {
+      const material = await this.prisma.material.findUnique({
+        where: { id },
+      });
+      
+      if (!material) {
+        throw new MaterialNotFoundException(id);
+      }
+      
+      return material;
+    } catch (error) {
+      if (error instanceof MaterialNotFoundException) {
+        throw error;
+      }
+      throw PrismaErrorMapper.map(
+        error, 
+        'material', 
+        'consultar', 
+        { id }
+      );
+    }
   }
 }
