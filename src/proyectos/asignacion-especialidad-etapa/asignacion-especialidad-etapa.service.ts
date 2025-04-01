@@ -29,7 +29,7 @@ export class AsignacionEspecialidadEtapaService {
       }
 
       // Verificar que exista la etapa
-      const etapa = await this.prisma.etapa.findUnique({
+      const etapa = await this.prisma.etapaProyecto.findUnique({
         where: { id: createDto.etapaId },
       });
       
@@ -127,7 +127,7 @@ export class AsignacionEspecialidadEtapaService {
       
       // Si se modifica la etapa, verificar que exista
       if (updateDto.etapaId) {
-        const etapa = await this.prisma.etapa.findUnique({
+        const etapa = await this.prisma.etapaProyecto.findUnique({
           where: { id: updateDto.etapaId },
         });
         

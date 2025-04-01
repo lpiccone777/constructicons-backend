@@ -7,9 +7,26 @@ import {
   IsDecimal,
   IsBoolean,
   MaxLength,
+  IsNumber,
 } from 'class-validator';
 
 export class UpdateMaterialProveedorDto {
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'ID del material',
+  })
+  @IsNumber()
+  @IsOptional()
+  materialId?: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'ID del proveedor',
+  })
+  @IsNumber()
+  @IsOptional()
+  proveedorId?: number;
+
   @ApiPropertyOptional({
     example: '375.25',
     description: 'Precio del material ofrecido por el proveedor',

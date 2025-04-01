@@ -199,12 +199,10 @@ export class ProveedoresService {
 
       // Usar transacción para eliminar proveedor y sus contactos
       await this.prisma.$transaction(async (prisma) => {
-        // Primero eliminar contactos asociados
-        if (proveedor.contactos.length > 0) {
-          await prisma.contactoProveedor.deleteMany({
-            where: { proveedorId: id },
-          });
-        }
+        // Eliminar contactos asociados, independientemente de si hay o no
+        await prisma.contactoProveedor.deleteMany({
+          where: { proveedorId: id },
+        });
 
         // Luego eliminar el proveedor
         await prisma.proveedor.delete({

@@ -29,7 +29,7 @@ export class AsignacionEspecialidadTareaService {
       }
 
       // Verificar que exista la tarea
-      const tarea = await this.prisma.tarea.findUnique({
+      const tarea = await this.prisma.tareaProyecto.findUnique({
         where: { id: createDto.tareaId },
       });
       
@@ -133,7 +133,7 @@ export class AsignacionEspecialidadTareaService {
       
       // Si se modifica la tarea, verificar que exista
       if (updateDto.tareaId) {
-        const tarea = await this.prisma.tarea.findUnique({
+        const tarea = await this.prisma.tareaProyecto.findUnique({
           where: { id: updateDto.tareaId },
         });
         
