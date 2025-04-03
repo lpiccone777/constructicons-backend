@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AsignacionEmpleadoTareaService } from './asignacion-empleado-tarea.service';
 import { CreateAsignacionEmpleadoTareaDto } from './dto/create-asignacion-empleado-tarea.dto';
@@ -17,13 +28,18 @@ export class AsignacionEmpleadoTareaController {
   @Post()
   @RequirePermissions('proyectos.crear')
   @ApiOperation({ summary: 'Crear una asignación de empleado a una tarea' })
-  async create(@Body() createDto: CreateAsignacionEmpleadoTareaDto, @Request() req: any) {
+  async create(
+    @Body() createDto: CreateAsignacionEmpleadoTareaDto,
+    @Request() req: any,
+  ) {
     return this.service.create(createDto, req.user.id);
   }
 
   @Get()
   @RequirePermissions('proyectos.leer')
-  @ApiOperation({ summary: 'Obtener todas las asignaciones de empleado a tareas' })
+  @ApiOperation({
+    summary: 'Obtener todas las asignaciones de empleado a tareas',
+  })
   async findAll() {
     return this.service.findAll();
   }
@@ -37,8 +53,14 @@ export class AsignacionEmpleadoTareaController {
 
   @Put(':id')
   @RequirePermissions('proyectos.actualizar')
-  @ApiOperation({ summary: 'Actualizar una asignación de empleado a una tarea' })
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateAsignacionEmpleadoTareaDto, @Request() req: any) {
+  @ApiOperation({
+    summary: 'Actualizar una asignación de empleado a una tarea',
+  })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateAsignacionEmpleadoTareaDto,
+    @Request() req: any,
+  ) {
     return this.service.update(id, updateDto, req.user.id);
   }
 

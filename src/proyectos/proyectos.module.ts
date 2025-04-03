@@ -8,8 +8,6 @@ import { EtapasController } from './etapas/etapas.controller';
 import { EtapasService } from './etapas/etapas.service';
 import { TareasController } from './tareas/tareas.controller';
 import { TareasService } from './tareas/tareas.service';
-import { AsignacionesController } from './asignaciones/asignaciones.controller';
-import { AsignacionesService } from './asignaciones/asignaciones.service';
 import { DocumentosController } from './documentos/documentos.controller';
 import { DocumentosService } from './documentos/documentos.service';
 import { NotasController } from './notas/notas.controller';
@@ -35,7 +33,6 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     ProyectosController,
     EtapasController,
     TareasController,
-    AsignacionesController,
     DocumentosController,
     NotasController,
     MaterialesController,
@@ -44,13 +41,12 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     MaterialesProveedoresController,
     AsignacionEmpleadoTareaController,
     AsignacionEspecialidadTareaController,
-    AsignacionEspecialidadEtapaController
+    AsignacionEspecialidadEtapaController,
   ],
   providers: [
     ProyectosService,
     EtapasService,
     TareasService,
-    AsignacionesService,
     DocumentosService,
     NotasService,
     MaterialesService,
@@ -59,13 +55,12 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     MaterialesProveedoresService,
     AsignacionEmpleadoTareaService,
     AsignacionEspecialidadTareaService,
-    AsignacionEspecialidadEtapaService
+    AsignacionEspecialidadEtapaService,
   ],
   exports: [
     ProyectosService,
     EtapasService,
     TareasService,
-    AsignacionesService,
     DocumentosService,
     NotasService,
     MaterialesService,
@@ -74,7 +69,7 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     MaterialesProveedoresService,
     AsignacionEmpleadoTareaService,
     AsignacionEspecialidadTareaService,
-    AsignacionEspecialidadEtapaService
-  ]
+    AsignacionEspecialidadEtapaService,
+  ],
 })
 export class ProyectosModule {}

@@ -12,7 +12,10 @@ export class CreateAsignacionEspecialidadTareaDto {
   @IsNotEmpty()
   especialidadId!: number;
 
-  @ApiProperty({ example: 2, description: 'Cantidad de especialistas requeridos' })
+  @ApiProperty({
+    example: 2,
+    description: 'Cantidad de especialistas requeridos',
+  })
   @IsNumber()
   @IsNotEmpty()
   cantidad!: number;
@@ -22,17 +25,29 @@ export class CreateAsignacionEspecialidadTareaDto {
   @IsNotEmpty()
   horasEstimadas!: number;
 
-  @ApiProperty({ example: 1500.00, description: 'Valor hora de la especialidad en la tarea' })
+  @ApiProperty({
+    example: 1500.0,
+    description: 'Valor hora de la especialidad en la tarea',
+  })
   @IsNumber()
   @IsNotEmpty()
   valorHora!: number;
 
-  @ApiPropertyOptional({ example: 120000.00, description: 'Costo total calculado (cantidad * horasEstimadas * valorHora)', required: false })
+  @ApiPropertyOptional({
+    example: 120000.0,
+    description:
+      'Costo total calculado (cantidad * horasEstimadas * valorHora)',
+    required: false,
+  })
   @IsNumber()
   @IsOptional()
   costoTotal?: number;
 
-  @ApiPropertyOptional({ example: 'Observaciones sobre la asignación', description: 'Observaciones adicionales', required: false })
+  @ApiPropertyOptional({
+    example: 'Observaciones sobre la asignación',
+    description: 'Observaciones adicionales',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   observaciones?: string;

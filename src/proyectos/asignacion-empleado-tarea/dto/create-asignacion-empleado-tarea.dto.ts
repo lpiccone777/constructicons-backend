@@ -7,7 +7,10 @@ export class CreateAsignacionEmpleadoTareaDto {
   @IsNotEmpty()
   empleadoId!: number;
 
-  @ApiProperty({ example: 5, description: 'ID de la tarea a la que se asigna el empleado' })
+  @ApiProperty({
+    example: 5,
+    description: 'ID de la tarea a la que se asigna el empleado',
+  })
   @IsNumber()
   @IsNotEmpty()
   tareaId!: number;
@@ -17,12 +20,19 @@ export class CreateAsignacionEmpleadoTareaDto {
   @IsNotEmpty()
   horasEstimadas!: number;
 
-  @ApiProperty({ example: 1500.00, description: 'Valor hora del empleado en la tarea' })
+  @ApiProperty({
+    example: 1500.0,
+    description: 'Valor hora del empleado en la tarea',
+  })
   @IsNumber()
   @IsNotEmpty()
   valorHora!: number;
 
-  @ApiPropertyOptional({ example: 'Asignación para el desarrollo de la instalación eléctrica', description: 'Observaciones adicionales', required: false })
+  @ApiPropertyOptional({
+    example: 'Asignación para el desarrollo de la instalación eléctrica',
+    description: 'Observaciones adicionales',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   observaciones?: string;

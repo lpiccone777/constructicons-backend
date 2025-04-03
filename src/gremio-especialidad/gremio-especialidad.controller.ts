@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Delete, Body, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GremioEspecialidadService } from './gremio-especialidad.service';
 import { CreateGremioEspecialidadDto } from './dto/create-gremio-especialidad.dto';
@@ -16,13 +26,18 @@ export class GremioEspecialidadController {
   @Post()
   @RequirePermissions('rrhh.crear')
   @ApiOperation({ summary: 'Asociar una especialidad a un gremio' })
-  async create(@Body() createDto: CreateGremioEspecialidadDto, @Request() req: any) {
+  async create(
+    @Body() createDto: CreateGremioEspecialidadDto,
+    @Request() req: any,
+  ) {
     return this.service.create(createDto, req.user.id);
   }
 
   @Get()
   @RequirePermissions('rrhh.leer')
-  @ApiOperation({ summary: 'Obtener todas las asociaciones de especialidades a gremios' })
+  @ApiOperation({
+    summary: 'Obtener todas las asociaciones de especialidades a gremios',
+  })
   async findAll() {
     return this.service.findAll();
   }

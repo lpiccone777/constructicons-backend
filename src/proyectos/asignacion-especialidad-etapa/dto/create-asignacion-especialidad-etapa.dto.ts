@@ -17,22 +17,33 @@ export class CreateAsignacionEspecialidadEtapaDto {
   @IsNotEmpty()
   cantidadRecursos!: number;
 
-  @ApiProperty({ example: 120.50, description: 'Horas estimadas para la etapa' })
+  @ApiProperty({ example: 120.5, description: 'Horas estimadas para la etapa' })
   @IsNumber()
   @IsNotEmpty()
   horasEstimadas!: number;
 
-  @ApiProperty({ example: 1500.00, description: 'Valor hora para la especialidad en la etapa' })
+  @ApiProperty({
+    example: 1500.0,
+    description: 'Valor hora para la especialidad en la etapa',
+  })
   @IsNumber()
   @IsNotEmpty()
   valorHora!: number;
 
-  @ApiPropertyOptional({ example: 5400.00, description: 'Costo total calculado (cantidadRecursos * horasEstimadas * valorHora)' })
+  @ApiPropertyOptional({
+    example: 5400.0,
+    description:
+      'Costo total calculado (cantidadRecursos * horasEstimadas * valorHora)',
+  })
   @IsNumber()
   @IsOptional()
   costoTotal?: number;
 
-  @ApiPropertyOptional({ example: 'Observaciones sobre la asignación', description: 'Observaciones adicionales', required: false })
+  @ApiPropertyOptional({
+    example: 'Observaciones sobre la asignación',
+    description: 'Observaciones adicionales',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   observaciones?: string;
