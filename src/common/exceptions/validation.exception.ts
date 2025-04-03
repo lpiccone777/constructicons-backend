@@ -65,8 +65,8 @@ export class ValidationException extends BaseException {
   ): ValidationException {
     const errors: ValidationError[] = validationErrors.map((error) => {
       return {
-        field: error.property,
-        message: Object.values(error.constraints || {}).join(', '),
+        field: error.property || 'desconocido',
+        message: Object.values(error.constraints || {}).join(', ') || `Error de validación en el campo ${error.property || 'desconocido'}`,
         value: error.value,
         constraints: error.constraints,
       };
