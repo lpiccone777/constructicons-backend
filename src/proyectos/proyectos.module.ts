@@ -8,8 +8,6 @@ import { EtapasController } from './etapas/etapas.controller';
 import { EtapasService } from './etapas/etapas.service';
 import { TareasController } from './tareas/tareas.controller';
 import { TareasService } from './tareas/tareas.service';
-import { DocumentosController } from './documentos/documentos.controller';
-import { DocumentosService } from './documentos/documentos.service';
 import { NotasController } from './notas/notas.controller';
 import { NotasService } from './notas/notas.service';
 import { MaterialesController } from './materiales/materiales.controller';
@@ -26,14 +24,14 @@ import { AsignacionEspecialidadTareaController } from './asignacion-especialidad
 import { AsignacionEspecialidadTareaService } from './asignacion-especialidad-tarea/asignacion-especialidad-tarea.service';
 import { AsignacionEspecialidadEtapaController } from './asignacion-especialidad-etapa/asignacion-especialidad-etapa.controller';
 import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-etapa/asignacion-especialidad-etapa.service';
+import { DocumentosModule } from './documentos/documentos.module';
 
 @Module({
-  imports: [PrismaModule, AuditoriaModule, PermisosModule],
+  imports: [PrismaModule, AuditoriaModule, PermisosModule, DocumentosModule],
   controllers: [
     ProyectosController,
     EtapasController,
     TareasController,
-    DocumentosController,
     NotasController,
     MaterialesController,
     ProveedoresController,
@@ -47,7 +45,6 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     ProyectosService,
     EtapasService,
     TareasService,
-    DocumentosService,
     NotasService,
     MaterialesService,
     ProveedoresService,
@@ -61,7 +58,6 @@ import { AsignacionEspecialidadEtapaService } from './asignacion-especialidad-et
     ProyectosService,
     EtapasService,
     TareasService,
-    DocumentosService,
     NotasService,
     MaterialesService,
     ProveedoresService,

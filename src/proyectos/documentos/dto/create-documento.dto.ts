@@ -9,6 +9,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
+// Este DTO se usa cuando se sube un archivo físicamente
 export class CreateDocumentoDto {
   @ApiProperty({
     example: 1,
@@ -46,13 +47,17 @@ export class CreateDocumentoDto {
   @IsIn(['plano', 'contrato', 'permiso', 'informe', 'presupuesto', 'otro'])
   tipo!: string;
 
-  @ApiProperty({
+  // El archivo se envía como un archivo multipart/form-data
+  // No se incluye en el DTO porque se accede a través de req.file
+
+  @ApiPropertyOptional({
     example:
       'https://storage.constructicons.com/documentos/proyecto1/plano-pb.pdf',
-    description: 'URL de almacenamiento del archivo',
+    description:
+      'URL de almacenamiento del archivo (opcional si se sube archivo físico)',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @IsUrl()
-  urlArchivo!: string;
+  urlArchivo?: string;
 }

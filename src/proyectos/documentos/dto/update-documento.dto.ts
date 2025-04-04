@@ -1,9 +1,14 @@
+import { PartialType, OmitType } from '@nestjs/swagger';
+import { CreateDocumentoDto } from './create-documento.dto';
+import { IsOptional, IsUrl, IsString, MaxLength, IsIn } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsIn, IsUrl, MaxLength } from 'class-validator';
 
-export class UpdateDocumentoDto {
+// Extendemos del DTO de creación, pero omitimos el proyectoId que no debería actualizarse
+export class UpdateDocumentoDto extends PartialType(
+  OmitType(CreateDocumentoDto, ['proyectoId'] as const),
+) {
   @ApiPropertyOptional({
-    example: 'Plano arquitectónico - Planta baja v2',
+    example: 'Plano arquitectónico - Planta baja actualizado',
     description: 'Nombre del documento',
   })
   @IsString()
@@ -12,8 +17,7 @@ export class UpdateDocumentoDto {
   nombre?: string;
 
   @ApiPropertyOptional({
-    example:
-      'Versión actualizada del plano con modificaciones en área de cocina',
+    example: 'Plano detallado actualizado',
     description: 'Descripción del documento',
   })
   @IsString()
@@ -33,7 +37,7 @@ export class UpdateDocumentoDto {
 
   @ApiPropertyOptional({
     example:
-      'https://storage.constructicons.com/documentos/proyecto1/plano-pb-v2.pdf',
+      'https://storage.constructicons.com/documentos/proyecto1/plano-pb-actualizado.pdf',
     description: 'URL de almacenamiento del archivo',
   })
   @IsString()

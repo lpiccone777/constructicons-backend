@@ -14,7 +14,10 @@ export class UpdateAsignacionMaterialDto {
     example: '12.75',
     description: 'Cantidad del material requerida (con 0-2 decimales)',
   })
-  @IsDecimal({ decimal_digits: '0,2', message: 'La cantidad debe ser un valor decimal con máximo 2 decimales' })
+  @IsDecimal(
+    { decimal_digits: '0,2' },
+    { message: 'La cantidad debe ser un valor decimal con máximo 2 decimales' },
+  )
   @IsOptional()
   cantidad?: string;
 

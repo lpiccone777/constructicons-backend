@@ -15,6 +15,31 @@ import {
 } from './exceptions';
 import { PrismaErrorMapper } from '../common/exceptions/prisma-error.mapper';
 
+interface TareaInfo {
+  nombre: string;
+  etapaNombre: string;
+}
+
+export interface EmpleadoConAsignaciones {
+  id: number;
+  nombre: string;
+  email: string | null;
+  telefono: string | null;
+  numeroDocumento: string;
+  asignaciones: AsignacionInfo[];
+}
+
+export interface AsignacionInfo {
+  asignacionId: number;
+  tareaId: number;
+  tareaNombre: string;
+  etapaNombre: string;
+  fechaAsignacion: Date;
+  estado: string | null;
+  horasEstimadas: any;
+  horasRegistradas: any;
+}
+
 @Injectable()
 export class ProyectosService {
   constructor(
@@ -426,6 +451,143 @@ export class ProyectosService {
 
     if (['finalizado', 'cancelado'].includes(proyecto.estado)) {
       throw new ProyectoClosedException(id, proyecto.estado);
+    }
+  }
+
+  /**
+   * Obtiene los empleados asignados a las tareas de un proyecto
+   * @param proyectoId ID del proyecto
+   * @returns Lista de empleados con sus asignaciones
+   */
+  async findEmpleadosProyecto(
+    proyectoId: number,
+  ): Promise<EmpleadoConAsignaciones[]> {
+    try {
+      // Verificar si el proyecto existe
+      await this.getProyectoOrFail(proyectoId);
+
+      // Obtener etapas del proyecto
+      const etapas = await this.prisma.etapaProyecto.findMany({
+        where: {
+          proyectoId: proyectoId,
+        },
+        select: {
+          id: true,
+          nombre: true,
+        },
+      });
+
+      if (etapas.length === 0) {
+        return []; // No hay etapas, por lo tanto no hay tareas ni empleados
+      }
+
+      const etapaIds = etapas.map((e) => e.id);
+
+      // Mapa para convertir el ID de etapa a su nombre
+      const etapaNombreMap: Record<number, string> = {};
+      etapas.forEach((etapa) => {
+        etapaNombreMap[etapa.id] = etapa.nombre;
+      });
+
+      // Obtener las tareas de esas etapas
+      const tareas = await this.prisma.tareaProyecto.findMany({
+        where: {
+          etapaId: {
+            in: etapaIds,
+          },
+        },
+        select: {
+          id: true,
+          nombre: true,
+          etapaId: true,
+        },
+      });
+
+      if (tareas.length === 0) {
+        return []; // No hay tareas, por lo tanto no hay empleados
+      }
+
+      const tareaIds = tareas.map((t) => t.id);
+
+      // Mapa para convertir el ID de tarea a su información
+      const tareaInfoMap: Record<number, TareaInfo> = {};
+      tareas.forEach((tarea) => {
+        tareaInfoMap[tarea.id] = {
+          nombre: tarea.nombre,
+          etapaNombre: etapaNombreMap[tarea.etapaId] || 'Sin etapa',
+        };
+      });
+
+      // Obtener asignaciones de empleados para esas tareas
+      const asignaciones = await this.prisma.asignacionEmpleadoTarea.findMany({
+        where: {
+          tareaId: {
+            in: tareaIds,
+          },
+          activo: true,
+        },
+        include: {
+          empleado: {
+            select: {
+              id: true,
+              nombre: true,
+              email: true,
+              telefono: true,
+              numeroDocumento: true,
+            },
+          },
+          tarea: {
+            select: {
+              id: true,
+              nombre: true,
+              estado: true,
+            },
+          },
+        },
+      });
+
+      // Estructurar la respuesta
+      const empleadosMap: Record<number, EmpleadoConAsignaciones> = {};
+
+      for (const asignacion of asignaciones) {
+        const empleadoId = asignacion.empleado.id;
+
+        if (!empleadosMap[empleadoId]) {
+          // Inicializar el empleado si es la primera asignación
+          empleadosMap[empleadoId] = {
+            id: asignacion.empleado.id,
+            nombre: asignacion.empleado.nombre,
+            email: asignacion.empleado.email,
+            telefono: asignacion.empleado.telefono,
+            numeroDocumento: asignacion.empleado.numeroDocumento,
+            asignaciones: [],
+          };
+        }
+
+        // Añadir la asignación actual
+        empleadosMap[empleadoId].asignaciones.push({
+          asignacionId: asignacion.id,
+          tareaId: asignacion.tareaId,
+          tareaNombre:
+            tareaInfoMap[asignacion.tareaId]?.nombre || asignacion.tarea.nombre,
+          etapaNombre:
+            tareaInfoMap[asignacion.tareaId]?.etapaNombre || 'Sin definir',
+          fechaAsignacion: asignacion.fechaAsignacion,
+          estado: asignacion.tarea.estado,
+          horasEstimadas: asignacion.horasEstimadas,
+          horasRegistradas: asignacion.horasRegistradas,
+        });
+      }
+
+      // Convertir el mapa a un array para la respuesta
+      return Object.values(empleadosMap);
+    } catch (error) {
+      if (!(error instanceof ProyectoNotFoundException)) {
+        throw PrismaErrorMapper.map(error, 'proyecto', 'consultar-empleados', {
+          proyectoId,
+        });
+      }
+      throw error;
     }
   }
 }

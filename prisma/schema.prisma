@@ -1,61 +1,55 @@
-// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model Usuario {
-  id              Int         @id @default(autoincrement())
-  nombre          String
-  email           String      @unique
-  password        String
-  estado          String      @default("activo") // activo o inactivo
-  fechaCreacion   DateTime    @default(now())
-  ultimaActividad DateTime?
-  roles           Rol[]       @relation("UsuarioRoles")
-  acciones        Auditoria[]
-  esSuperUsuario  Boolean     @default(false)
-
-  // Nuevas relaciones para proyectos
-  proyectosAsignados AsignacionProyecto[]
-  tareasAsignadas    AsignacionTarea[]
+  id                 Int                 @id @default(autoincrement())
+  nombre             String
+  email              String              @unique
+  password           String
+  estado             String              @default("activo")
+  fechaCreacion      DateTime            @default(now())
+  ultimaActividad    DateTime?
+  esSuperUsuario     Boolean             @default(false)
+  acciones           Auditoria[]
   documentosCargados DocumentoProyecto[]
   notasProyecto      NotaProyecto[]
+  roles              Rol[]               @relation("UsuarioRoles")
 }
 
 model Rol {
   id          Int       @id @default(autoincrement())
   nombre      String    @unique
   descripcion String?
-  usuarios    Usuario[] @relation("UsuarioRoles")
   permisos    Permiso[] @relation("RolPermisos")
+  usuarios    Usuario[] @relation("UsuarioRoles")
 }
 
 model Permiso {
   id          Int     @id @default(autoincrement())
   nombre      String  @unique
   descripcion String?
-  modulo      String // a qué módulo pertenece
-  accion      String // qué acción permite (crear, leer, actualizar, eliminar)
+  modulo      String
+  accion      String
   roles       Rol[]   @relation("RolPermisos")
 }
 
 model Auditoria {
   id        Int      @id @default(autoincrement())
   usuarioId Int
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
-  accion    String // inserción, actualización, borrado
-  entidad   String // qué tabla fue afectada
-  entidadId String // id de la entidad afectada
-  detalles  Json? // detalles del cambio en formato JSON
+  accion    String
+  entidad   String
+  entidadId String
+  detalles  Json?
   fechaHora DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
 }
 
-// Modelo para proyectos de construcción
 model Proyecto {
   id                    Int                          @id @default(autoincrement())
   codigo                String                       @unique
@@ -66,116 +60,82 @@ model Proyecto {
   fechaFinEstimada      DateTime?
   fechaFinReal          DateTime?
   presupuestoTotal      Decimal                      @db.Decimal(12, 2)
-  estado                String                       @default("planificacion") // planificacion, ejecucion, pausado, finalizado, cancelado
-  prioridad             String                       @default("media") // baja, media, alta
+  estado                String                       @default("planificacion")
+  prioridad             String                       @default("media")
   fechaCreacion         DateTime                     @default(now())
   fechaActualizacion    DateTime                     @updatedAt
-  etapas                EtapaProyecto[]
-  asignaciones          AsignacionProyecto[]
-  documentos            DocumentoProyecto[]
-  notas                 NotaProyecto[]
   asignacionesEmpleados AsignacionEmpleadoProyecto[]
+  documentos            DocumentoProyecto[]
+  etapas                EtapaProyecto[]
+  notas                 NotaProyecto[]
 }
 
-// Modelo para etapas de proyectos
 model EtapaProyecto {
   id                       Int                           @id @default(autoincrement())
   nombre                   String
   descripcion              String?
   proyectoId               Int
-  proyecto                 Proyecto                      @relation(fields: [proyectoId], references: [id])
   orden                    Int
   fechaInicio              DateTime?
   fechaFinEstimada         DateTime?
   fechaFinReal             DateTime?
   presupuesto              Decimal                       @db.Decimal(12, 2)
-  estado                   String                        @default("pendiente") // pendiente, en_progreso, completada
-  avance                   Int                           @default(0) // Porcentaje de avance (0-100)
+  estado                   String                        @default("pendiente")
+  avance                   Int                           @default(0)
   fechaCreacion            DateTime                      @default(now())
   fechaActualizacion       DateTime                      @updatedAt
-  tareas                   TareaProyecto[]
   asignacionesEspecialidad AsignacionEspecialidadEtapa[]
+  proyecto                 Proyecto                      @relation(fields: [proyectoId], references: [id])
+  tareas                   TareaProyecto[]
 }
 
-// Modelo para tareas de etapas
 model TareaProyecto {
-  id                    Int                       @id @default(autoincrement())
-  nombre                String
-  descripcion           String?
-  etapaId               Int
-  etapa                 EtapaProyecto             @relation(fields: [etapaId], references: [id])
-  orden                 Int
-  fechaInicio           DateTime?
-  fechaFinEstimada      DateTime?
-  fechaFinReal          DateTime?
-  estado                String                    @default("pendiente")
-  prioridad             String                    @default("media")
-  asignado              AsignacionTarea[]
-  fechaCreacion         DateTime                  @default(now())
-  fechaActualizacion    DateTime                  @updatedAt
-  materialesAsignados   AsignacionMaterial[]
-  asignacionesEmpleados AsignacionEmpleadoTarea[]
-
-  // Relación inversa para asignaciones de especialidades a tareas
+  id                          Int                           @id @default(autoincrement())
+  nombre                      String
+  descripcion                 String?
+  etapaId                     Int
+  orden                       Int
+  fechaInicio                 DateTime?
+  fechaFinEstimada            DateTime?
+  fechaFinReal                DateTime?
+  estado                      String                        @default("pendiente")
+  prioridad                   String                        @default("media")
+  fechaCreacion               DateTime                      @default(now())
+  fechaActualizacion          DateTime                      @updatedAt
+  asignacionesEmpleados       AsignacionEmpleadoTarea[]
   asignacionEspecialidadTarea AsignacionEspecialidadTarea[] @relation("TareaEspecialidadTarea")
+  materialesAsignados         AsignacionMaterial[]
+  etapa                       EtapaProyecto                 @relation(fields: [etapaId], references: [id])
 }
 
-// Modelo para asignación de empleados a proyectos
-model AsignacionProyecto {
-  id                 Int       @id @default(autoincrement())
-  proyectoId         Int
-  proyecto           Proyecto  @relation(fields: [proyectoId], references: [id])
-  usuarioId          Int
-  usuario            Usuario   @relation(fields: [usuarioId], references: [id])
-  rol                String // director, arquitecto, ingeniero, capataz, obrero, etc.
-  fechaAsignacion    DateTime  @default(now())
-  fechaDesasignacion DateTime?
-  activo             Boolean   @default(true)
-
-  @@unique([proyectoId, usuarioId, rol])
-}
-
-// Modelo para asignación de empleados a tareas específicas
-model AsignacionTarea {
-  id                 Int           @id @default(autoincrement())
-  tareaId            Int
-  tarea              TareaProyecto @relation(fields: [tareaId], references: [id])
-  usuarioId          Int
-  usuario            Usuario       @relation(fields: [usuarioId], references: [id])
-  fechaAsignacion    DateTime      @default(now())
-  fechaDesasignacion DateTime?
-  activo             Boolean       @default(true)
-
-  @@unique([tareaId, usuarioId])
-}
-
-// Modelo para documentos de proyecto
 model DocumentoProyecto {
-  id             Int      @id @default(autoincrement())
-  proyectoId     Int
-  proyecto       Proyecto @relation(fields: [proyectoId], references: [id])
-  nombre         String
-  descripcion    String?
-  tipo           String // plano, contrato, permiso, informe, etc.
-  urlArchivo     String
-  fechaCarga     DateTime @default(now())
-  usuarioCargaId Int
-  usuarioCarga   Usuario  @relation(fields: [usuarioCargaId], references: [id])
+  id               Int      @id @default(autoincrement())
+  proyectoId       Int
+  nombre           String
+  descripcion      String?
+  tipo             String
+  urlArchivo       String?  // Ahora es opcional
+  contenidoArchivo Bytes?   // Contenido binario del archivo
+  extension        String?  // Extensión del archivo (pdf, jpg, etc.)
+  mimeType         String?  // Tipo MIME del archivo
+  tamano           Int?     // Tamaño del archivo en bytes
+  fechaCarga       DateTime @default(now())
+  usuarioCargaId   Int
+  proyecto         Proyecto @relation(fields: [proyectoId], references: [id])
+  usuarioCarga     Usuario  @relation(fields: [usuarioCargaId], references: [id])
 }
 
-// Modelo para notas/comentarios de proyecto
 model NotaProyecto {
   id            Int      @id @default(autoincrement())
   proyectoId    Int
-  proyecto      Proyecto @relation(fields: [proyectoId], references: [id])
   usuarioId     Int
-  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
   contenido     String
   fechaCreacion DateTime @default(now())
   esPrivada     Boolean  @default(false)
+  proyecto      Proyecto @relation(fields: [proyectoId], references: [id])
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
 }
 
-// Modelo para materiales
 model Material {
   id                 Int                  @id @default(autoincrement())
   codigo             String               @unique
@@ -191,13 +151,12 @@ model Material {
   proveedores        MaterialProveedor[]
 }
 
-// Modelo para proveedores
 model Proveedor {
   id                 Int                 @id @default(autoincrement())
   codigo             String              @unique
   nombre             String
   nombreComercial    String?
-  tipoDocumento      String // RFC, NIF, etc.
+  tipoDocumento      String
   numeroDocumento    String
   direccion          String?
   ciudad             String?
@@ -206,80 +165,69 @@ model Proveedor {
   telefono           String?
   email              String?
   sitioWeb           String?
-  categorias         String[] // Array de categorías
-  condicionesPago    String? // 30 días, 60 días, etc.
-  descuento          Decimal?            @db.Decimal(5, 2) // Porcentaje
+  categorias         String[]
+  condicionesPago    String?
+  descuento          Decimal?            @db.Decimal(5, 2)
   observaciones      String?
   estado             String              @default("activo")
   fechaCreacion      DateTime            @default(now())
   fechaActualizacion DateTime            @updatedAt
-  // Relaciones
   contactos          ContactoProveedor[]
   materiales         MaterialProveedor[]
 }
 
-// Contactos de proveedor
 model ContactoProveedor {
   id            Int       @id @default(autoincrement())
   proveedorId   Int
-  proveedor     Proveedor @relation(fields: [proveedorId], references: [id])
   nombre        String
   cargo         String?
   telefono      String?
   email         String?
   esPrincipal   Boolean   @default(false)
   observaciones String?
+  proveedor     Proveedor @relation(fields: [proveedorId], references: [id])
 }
 
-// Añadir al final del archivo prisma/schema.prisma
-
-// Modelo para la asignación de materiales a tareas
 model AsignacionMaterial {
   id                 Int           @id @default(autoincrement())
   materialId         Int
-  material           Material      @relation(fields: [materialId], references: [id])
   tareaId            Int
-  tarea              TareaProyecto @relation(fields: [tareaId], references: [id])
   cantidad           Decimal       @db.Decimal(12, 2)
-  unidadMedida       String // Se guarda para mantener coherencia histórica
-  estado             String        @default("pendiente") // pendiente, solicitado, comprado, entregado
+  unidadMedida       String
+  estado             String        @default("pendiente")
   observaciones      String?
   fechaAsignacion    DateTime      @default(now())
   fechaActualizacion DateTime      @updatedAt
+  material           Material      @relation(fields: [materialId], references: [id])
+  tarea              TareaProyecto @relation(fields: [tareaId], references: [id])
 
   @@unique([materialId, tareaId])
 }
 
-// Modelo para relacionar materiales y proveedores con precios
 model MaterialProveedor {
   id                   Int       @id @default(autoincrement())
   materialId           Int
-  material             Material  @relation(fields: [materialId], references: [id])
   proveedorId          Int
-  proveedor            Proveedor @relation(fields: [proveedorId], references: [id])
   precio               Decimal   @db.Decimal(12, 2)
-  unidadMedida         String // Se guarda para mantener coherencia histórica
-  tiempoEntrega        String? // Tiempo estimado de entrega (ej: "2-3 días")
-  cantidadMinima       Decimal?  @db.Decimal(12, 2) // Cantidad mínima de pedido
+  unidadMedida         String
+  tiempoEntrega        String?
+  cantidadMinima       Decimal?  @db.Decimal(12, 2)
   observaciones        String?
   esProveedorPrincipal Boolean   @default(false)
   fechaActualizacion   DateTime  @updatedAt
   fechaCreacion        DateTime  @default(now())
+  material             Material  @relation(fields: [materialId], references: [id])
+  proveedor            Proveedor @relation(fields: [proveedorId], references: [id])
 
   @@unique([materialId, proveedorId])
 }
 
-// Agregar al archivo prisma/schema.prisma
-
-// Agregar al archivo prisma/schema.prisma
-
-// Modelo para empleados (mano de obra)
 model Empleado {
   id                   Int                          @id @default(autoincrement())
-  codigo               String                       @unique // Código único del empleado
+  codigo               String                       @unique
   nombre               String
   apellido             String
-  tipoDocumento        String // DNI, CUIL, etc.
+  tipoDocumento        String
   numeroDocumento      String
   fechaNacimiento      DateTime?
   telefono             String?
@@ -290,135 +238,118 @@ model Empleado {
   pais                 String?
   fechaIngreso         DateTime                     @default(now())
   fechaEgreso          DateTime?
-  estado               String                       @default("activo") // activo, inactivo, licencia
+  estado               String                       @default("activo")
   observaciones        String?
-  // Relaciones
-  especialidades       EmpleadoEspecialidad[]
-  asignacionesProyecto AsignacionEmpleadoProyecto[]
-  asignacionesTarea    AsignacionEmpleadoTarea[]
   gremioId             Int?
-  gremio               Gremio?                      @relation(fields: [gremioId], references: [id])
-  // Auditoría
   fechaCreacion        DateTime                     @default(now())
   fechaActualizacion   DateTime                     @updatedAt
+  asignacionesProyecto AsignacionEmpleadoProyecto[]
+  asignacionesTarea    AsignacionEmpleadoTarea[]
+  gremio               Gremio?                      @relation(fields: [gremioId], references: [id])
+  especialidades       EmpleadoEspecialidad[]
 
   @@index([codigo])
   @@index([estado])
 }
 
-// Modelo para especialidades/oficios
 model Especialidad {
-  id                 Int                           @id @default(autoincrement())
-  codigo             String                        @unique
-  nombre             String
-  descripcion        String?
-  valorHoraBase      Decimal                       @db.Decimal(12, 2)
-  empleados          EmpleadoEspecialidad[]
-  etapasAsignadas    AsignacionEspecialidadEtapa[]
-  fechaCreacion      DateTime                      @default(now())
-  fechaActualizacion DateTime                      @updatedAt
-
-  // Relaciones inversas para asignaciones de especialidades a tareas y gremios
+  id                          Int                           @id @default(autoincrement())
+  codigo                      String                        @unique
+  nombre                      String
+  descripcion                 String?
+  valorHoraBase               Decimal                       @db.Decimal(12, 2)
+  fechaCreacion               DateTime                      @default(now())
+  fechaActualizacion          DateTime                      @updatedAt
+  etapasAsignadas             AsignacionEspecialidadEtapa[]
   asignacionEspecialidadTarea AsignacionEspecialidadTarea[] @relation("EspecialidadTarea")
+  empleados                   EmpleadoEspecialidad[]
   gremioEspecialidades        GremioEspecialidad[]          @relation("EspecialidadGremio")
 }
 
-// Modelo para gremios/sindicatos
 model Gremio {
-  id                 Int        @id @default(autoincrement())
-  codigo             String     @unique
-  nombre             String
-  descripcion        String?
-  contactoNombre     String?
-  contactoTelefono   String?
-  contactoEmail      String?
-  convenioVigente    String?
-  fechaConvenio      DateTime?
-  observaciones      String?
-  empleados          Empleado[]
-  fechaCreacion      DateTime   @default(now())
-  fechaActualizacion DateTime   @updatedAt
-
-  // Relación inversa para gremio-especialidad
+  id                   Int                  @id @default(autoincrement())
+  codigo               String               @unique
+  nombre               String
+  descripcion          String?
+  contactoNombre       String?
+  contactoTelefono     String?
+  contactoEmail        String?
+  convenioVigente      String?
+  fechaConvenio        DateTime?
+  observaciones        String?
+  fechaCreacion        DateTime             @default(now())
+  fechaActualizacion   DateTime             @updatedAt
+  empleados            Empleado[]
   gremioEspecialidades GremioEspecialidad[] @relation("GremioEspecialidadRelation")
 }
 
-// Relación Empleado-Especialidad
 model EmpleadoEspecialidad {
   id                 Int          @id @default(autoincrement())
   empleadoId         Int
-  empleado           Empleado     @relation(fields: [empleadoId], references: [id])
   especialidadId     Int
-  especialidad       Especialidad @relation(fields: [especialidadId], references: [id])
-  valorHora          Decimal      @db.Decimal(12, 2) // Valor específico de este empleado
+  valorHora          Decimal      @db.Decimal(12, 2)
   fechaDesde         DateTime     @default(now())
-  fechaHasta         DateTime? // Si es null, está vigente
-  certificaciones    String[] // Certificaciones relevantes
-  nivelExperiencia   String       @default("medio") // junior, medio, senior
-  esPrincipal        Boolean      @default(true) // Si es su especialidad principal
+  fechaHasta         DateTime?
+  certificaciones    String[]
+  nivelExperiencia   String       @default("medio")
+  esPrincipal        Boolean      @default(true)
   observaciones      String?
-  // Auditoría
   fechaCreacion      DateTime     @default(now())
   fechaActualizacion DateTime     @updatedAt
+  empleado           Empleado     @relation(fields: [empleadoId], references: [id])
+  especialidad       Especialidad @relation(fields: [especialidadId], references: [id])
 
   @@unique([empleadoId, especialidadId, fechaDesde])
   @@index([empleadoId])
   @@index([especialidadId])
 }
 
-// Asignación de empleados a proyectos
 model AsignacionEmpleadoProyecto {
   id                 Int       @id @default(autoincrement())
   empleadoId         Int
-  empleado           Empleado  @relation(fields: [empleadoId], references: [id])
   proyectoId         Int
-  proyecto           Proyecto  @relation(fields: [proyectoId], references: [id])
-  rol                String // Rol en el proyecto (diferente de roles de sistema)
+  rol                String
   fechaAsignacion    DateTime  @default(now())
   fechaDesasignacion DateTime?
   horasDiarias       Decimal   @default(8.00) @db.Decimal(4, 2)
-  valorHora          Decimal   @db.Decimal(12, 2) // Puede diferir del valor base
+  valorHora          Decimal   @db.Decimal(12, 2)
   activo             Boolean   @default(true)
   observaciones      String?
-  // Auditoría
   fechaCreacion      DateTime  @default(now())
   fechaActualizacion DateTime  @updatedAt
+  empleado           Empleado  @relation(fields: [empleadoId], references: [id])
+  proyecto           Proyecto  @relation(fields: [proyectoId], references: [id])
 
   @@unique([empleadoId, proyectoId, fechaAsignacion])
   @@index([empleadoId])
   @@index([proyectoId])
 }
 
-// Asignación de empleados a tareas
 model AsignacionEmpleadoTarea {
   id                 Int           @id @default(autoincrement())
   empleadoId         Int
-  empleado           Empleado      @relation(fields: [empleadoId], references: [id])
   tareaId            Int
-  tarea              TareaProyecto @relation(fields: [tareaId], references: [id])
   fechaAsignacion    DateTime      @default(now())
   fechaDesasignacion DateTime?
-  horasEstimadas     Decimal       @db.Decimal(6, 2) // Total de horas estimadas
-  horasRegistradas   Decimal       @default(0) @db.Decimal(6, 2) // Horas efectivamente trabajadas
-  valorHora          Decimal       @db.Decimal(12, 2) // Puede diferir del valor base
+  horasEstimadas     Decimal       @db.Decimal(6, 2)
+  horasRegistradas   Decimal       @default(0) @db.Decimal(6, 2)
+  valorHora          Decimal       @db.Decimal(12, 2)
   activo             Boolean       @default(true)
   observaciones      String?
-  // Auditoría
   fechaCreacion      DateTime      @default(now())
   fechaActualizacion DateTime      @updatedAt
+  empleado           Empleado      @relation(fields: [empleadoId], references: [id])
+  tarea              TareaProyecto @relation(fields: [tareaId], references: [id])
 
   @@unique([empleadoId, tareaId, fechaAsignacion])
   @@index([empleadoId])
   @@index([tareaId])
 }
 
-// Modelo para asignación de especialidades a etapas
 model AsignacionEspecialidadEtapa {
   id                 Int           @id @default(autoincrement())
   etapaId            Int
-  etapa              EtapaProyecto @relation(fields: [etapaId], references: [id])
   especialidadId     Int
-  especialidad       Especialidad  @relation(fields: [especialidadId], references: [id])
   cantidadRecursos   Int
   horasEstimadas     Decimal       @db.Decimal(8, 2)
   valorHora          Decimal       @db.Decimal(12, 2)
@@ -426,6 +357,8 @@ model AsignacionEspecialidadEtapa {
   observaciones      String?
   fechaCreacion      DateTime      @default(now())
   fechaActualizacion DateTime      @updatedAt
+  especialidad       Especialidad  @relation(fields: [especialidadId], references: [id])
+  etapa              EtapaProyecto @relation(fields: [etapaId], references: [id])
 
   @@unique([etapaId, especialidadId])
   @@index([etapaId])
@@ -435,9 +368,7 @@ model AsignacionEspecialidadEtapa {
 model AsignacionEspecialidadTarea {
   id                 Int           @id @default(autoincrement())
   tareaId            Int
-  tarea              TareaProyecto @relation(fields: [tareaId], references: [id], name: "TareaEspecialidadTarea")
   especialidadId     Int
-  especialidad       Especialidad  @relation(fields: [especialidadId], references: [id], name: "EspecialidadTarea")
   cantidadRecursos   Int
   horasEstimadas     Decimal       @db.Decimal(8, 2)
   valorHora          Decimal       @db.Decimal(12, 2)
@@ -445,6 +376,8 @@ model AsignacionEspecialidadTarea {
   observaciones      String?
   fechaCreacion      DateTime      @default(now())
   fechaActualizacion DateTime      @updatedAt
+  especialidad       Especialidad  @relation("EspecialidadTarea", fields: [especialidadId], references: [id])
+  tarea              TareaProyecto @relation("TareaEspecialidadTarea", fields: [tareaId], references: [id])
 
   @@unique([tareaId, especialidadId])
 }
@@ -453,8 +386,8 @@ model GremioEspecialidad {
   id             Int          @id @default(autoincrement())
   gremioId       Int
   especialidadId Int
-  gremio         Gremio       @relation(fields: [gremioId], references: [id], name: "GremioEspecialidadRelation")
-  especialidad   Especialidad @relation(fields: [especialidadId], references: [id], name: "EspecialidadGremio")
+  especialidad   Especialidad @relation("EspecialidadGremio", fields: [especialidadId], references: [id])
+  gremio         Gremio       @relation("GremioEspecialidadRelation", fields: [gremioId], references: [id])
 
   @@unique([gremioId, especialidadId])
 }

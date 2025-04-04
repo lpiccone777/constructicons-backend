@@ -22,7 +22,9 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
+  ApiResponse,
 } from '@nestjs/swagger';
+import { EmpleadoConAsignaciones } from './proyectos.service';
 
 @ApiTags('proyectos')
 @ApiBearerAuth()
@@ -89,5 +91,21 @@ export class ProyectosController {
   @ApiOperation({ summary: 'Eliminar un proyecto' })
   async delete(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     return this.proyectosService.delete(id, req.user.id);
+  }
+
+  @Get(':id/empleados')
+  @RequirePermissions('proyectos.leer')
+  @UseGuards(PermissionsGuard)
+  @ApiOperation({
+    summary: 'Obtener empleados asignados a las tareas de un proyecto',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de empleados con sus asignaciones en el proyecto',
+  })
+  async findEmpleadosProyecto(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<EmpleadoConAsignaciones[]> {
+    return this.proyectosService.findEmpleadosProyecto(id);
   }
 }
